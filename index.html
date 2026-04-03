@@ -10,6 +10,8 @@
     body { background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
     canvas { display: block; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
@@ -21,6 +23,70 @@
   const ctx = canvas.getContext('2d');
   canvas.width = CANVAS_W;
   canvas.height = CANVAS_H;
+
+  // === GESTURE DETECTOR ===
+  const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/';
+  // ^^^ REPLACE with your actual Teachable Machine model URL ^^^
+
+  const GestureDetector = {
+    model: null,
+    webcam: null,
+    video: null,
+    currentGesture: 'idle',
+    confidence: 0,
+    allPredictions: [],
+    isReady: false,
+    predictionInterval: null,
+
+    async init() {
+      const modelURL = MODEL_URL + 'model.json';
+      const metadataURL = MODEL_URL + 'metadata.json';
+      this.model = await tmImage.load(modelURL, metadataURL);
+
+      this.video = document.createElement('video');
+      this.video.setAttribute('playsinline', '');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 224, height: 224, facingMode: 'user' }
+      });
+      this.video.srcObject = stream;
+      await this.video.play();
+
+      this.isReady = true;
+      this.startPredictions();
+    },
+
+    startPredictions() {
+      this.predictionInterval = setInterval(async () => {
+        if (!this.model || !this.video) return;
+        const predictions = await this.model.predict(this.video);
+        this.allPredictions = predictions;
+
+        let best = predictions[0];
+        for (const p of predictions) {
+          if (p.probability > best.probability) best = p;
+        }
+        this.currentGesture = best.className;
+        this.confidence = best.probability;
+      }, 200);
+    },
+
+    stop() {
+      if (this.predictionInterval) clearInterval(this.predictionInterval);
+      if (this.video && this.video.srcObject) {
+        this.video.srcObject.getTracks().forEach(t => t.stop());
+      }
+    },
+
+    drawWebcamPreview(x, y, w, h) {
+      if (!this.video) return;
+      ctx.save();
+      ctx.drawImage(this.video, x, y, w, h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x, y, w, h);
+      ctx.restore();
+    }
+  };
 
   // === STATE MACHINE ===
   const GameState = {
@@ -43,7 +109,10 @@
   }
 
   function onStateEnter(state) {
-    // Will be filled in by each screen module
+    if (state === GameState.WEBCAM_SETUP) {
+      webcamSetupTime = 0;
+      enterWebcamSetup();
+    }
   }
 
   // === GAME LOOP ===
@@ -62,6 +131,7 @@
   function update(dt) {
     switch (currentState) {
       case GameState.TITLE: updateTitle(dt); break;
+      case GameState.WEBCAM_SETUP: updateWebcamSetup(dt); break;
       case GameState.COMBAT: updateCombat(dt); break;
     }
   }
@@ -81,6 +151,7 @@
 
     switch (currentState) {
       case GameState.TITLE: renderTitle(); break;
+      case GameState.WEBCAM_SETUP: renderWebcamSetup(); break;
       case GameState.COMBAT: renderCombat(); break;
     }
   }
@@ -115,6 +186,69 @@
     ctx.restore();
   }
 
+  // === WEBCAM SETUP SCREEN ===
+  let webcamSetupStatus = 'loading';
+  let webcamSetupTime = 0;
+
+  async function enterWebcamSetup() {
+    webcamSetupStatus = 'loading';
+    try {
+      await GestureDetector.init();
+      webcamSetupStatus = 'ready';
+    } catch (e) {
+      console.error('Webcam/model error:', e);
+      webcamSetupStatus = 'error';
+    }
+  }
+
+  function updateWebcamSetup(dt) {
+    webcamSetupTime += dt;
+  }
+
+  function renderWebcamSetup() {
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    if (webcamSetupStatus === 'loading') {
+      ctx.font = '700 28px Rajdhani';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('LOADING CAMERA & MODEL...', CANVAS_W / 2, CANVAS_H / 2 - 20);
+      const dots = '.'.repeat(Math.floor(webcamSetupTime * 2) % 4);
+      ctx.font = '600 22px Rajdhani';
+      ctx.fillStyle = '#888';
+      ctx.fillText('Please allow camera access' + dots, CANVAS_W / 2, CANVAS_H / 2 + 20);
+    } else if (webcamSetupStatus === 'error') {
+      ctx.font = '700 28px Rajdhani';
+      ctx.fillStyle = '#ff4444';
+      ctx.fillText('CAMERA OR MODEL ERROR', CANVAS_W / 2, CANVAS_H / 2 - 20);
+      ctx.font = '600 20px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('Check camera permissions and model URL', CANVAS_W / 2, CANVAS_H / 2 + 20);
+    } else if (webcamSetupStatus === 'ready') {
+      GestureDetector.drawWebcamPreview(CANVAS_W / 2 - 160, 100, 320, 240);
+
+      ctx.font = '700 22px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('DETECTED GESTURE:', CANVAS_W / 2, 380);
+      ctx.font = '800 36px Orbitron';
+      ctx.fillStyle = '#00ffcc';
+      ctx.shadowColor = 'rgba(0,255,200,0.5)';
+      ctx.shadowBlur = 15;
+      ctx.fillText(GestureDetector.currentGesture.toUpperCase(), CANVAS_W / 2, 420);
+      ctx.shadowBlur = 0;
+      ctx.font = '600 20px Rajdhani';
+      ctx.fillStyle = '#888';
+      ctx.fillText(`Confidence: ${Math.round(GestureDetector.confidence * 100)}%`, CANVAS_W / 2, 455);
+
+      const alpha = 0.5 + 0.5 * Math.sin(webcamSetupTime * 3);
+      ctx.font = '700 24px Rajdhani';
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fillText('CLICK TO BEGIN COMBAT', CANVAS_W / 2, 530);
+    }
+
+    ctx.restore();
+  }
+
   // === COMBAT SCREEN (placeholder) ===
   function updateCombat(dt) {}
 
@@ -131,6 +265,8 @@
   canvas.addEventListener('click', () => {
     if (currentState === GameState.TITLE) {
       setState(GameState.WEBCAM_SETUP);
+    } else if (currentState === GameState.WEBCAM_SETUP && webcamSetupStatus === 'ready') {
+      setState(GameState.LEVEL_INTRO);
     }
   });
 
