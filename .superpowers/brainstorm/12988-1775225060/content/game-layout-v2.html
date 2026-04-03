@@ -1,0 +1,154 @@
+<h2>Rhythm Combat -- AAA Visual Direction</h2>
+<p class="subtitle">Cinematic, polished game feel</p>
+
+<div class="mockup">
+  <div class="mockup-header">Game Screen -- AAA Style</div>
+  <div class="mockup-body" style="background: linear-gradient(180deg, #0a0a1a 0%, #1a0a2e 40%, #0d0d2b 100%); color: #eee; padding: 0; height: 560px; position: relative; overflow: hidden;">
+
+    <!-- Atmospheric background effects -->
+    <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 80%, rgba(100, 50, 255, 0.08) 0%, transparent 60%); pointer-events: none;"></div>
+    <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(0, 150, 255, 0.05) 0%, transparent 40%); pointer-events: none;"></div>
+    <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 80% 50%, rgba(255, 50, 50, 0.05) 0%, transparent 40%); pointer-events: none;"></div>
+
+    <!-- Particle hints -->
+    <div style="position: absolute; top: 80px; left: 15%; width: 3px; height: 3px; background: rgba(100,180,255,0.6); border-radius: 50%; box-shadow: 0 0 6px rgba(100,180,255,0.4);"></div>
+    <div style="position: absolute; top: 150px; left: 25%; width: 2px; height: 2px; background: rgba(255,200,100,0.5); border-radius: 50%; box-shadow: 0 0 4px rgba(255,200,100,0.3);"></div>
+    <div style="position: absolute; top: 200px; right: 20%; width: 3px; height: 3px; background: rgba(255,100,100,0.6); border-radius: 50%; box-shadow: 0 0 6px rgba(255,100,100,0.4);"></div>
+    <div style="position: absolute; top: 120px; right: 30%; width: 2px; height: 2px; background: rgba(200,150,255,0.5); border-radius: 50%; box-shadow: 0 0 4px rgba(200,150,255,0.3);"></div>
+
+    <!-- Top HUD - cinematic style -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%); position: relative; z-index: 2;">
+      <!-- Player HP -->
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #1a3a6e, #2255cc); border-radius: 50%; border: 2px solid #4488ff; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 0 12px rgba(68,136,255,0.4);">⚡</div>
+          <div>
+            <div style="font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #88bbff; text-transform: uppercase; text-shadow: 0 0 8px rgba(68,136,255,0.3);">WARRIOR</div>
+          </div>
+        </div>
+        <div style="background: rgba(0,0,0,0.6); border-radius: 2px; height: 8px; width: 220px; overflow: hidden; border: 1px solid rgba(68,136,255,0.3);">
+          <div style="background: linear-gradient(90deg, #0066ff, #00ccff); height: 100%; width: 75%; box-shadow: 0 0 10px rgba(0,204,255,0.5), inset 0 1px 0 rgba(255,255,255,0.3);"></div>
+        </div>
+        <div style="font-size: 10px; color: #5588bb; margin-top: 3px; letter-spacing: 1px;">75 / 100 HP</div>
+      </div>
+
+      <!-- Center - Level -->
+      <div style="text-align: center; flex: 0.4;">
+        <div style="font-size: 10px; letter-spacing: 4px; color: #666; text-transform: uppercase;">Stage</div>
+        <div style="font-size: 22px; font-weight: 800; color: #fff; text-shadow: 0 0 20px rgba(255,204,0,0.4); letter-spacing: 3px;">I</div>
+        <div style="font-size: 10px; color: #ffcc00; letter-spacing: 2px; text-shadow: 0 0 6px rgba(255,204,0,0.3);">SCORE 12,400</div>
+      </div>
+
+      <!-- Enemy HP -->
+      <div style="flex: 1; text-align: right;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; justify-content: flex-end;">
+          <div>
+            <div style="font-size: 13px; font-weight: 700; letter-spacing: 2px; color: #ff6666; text-transform: uppercase; text-shadow: 0 0 8px rgba(255,50,50,0.3);">SHADOW</div>
+          </div>
+          <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #6e1a1a, #cc2222); border-radius: 50%; border: 2px solid #ff4444; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 0 12px rgba(255,68,68,0.4);">💀</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.6); border-radius: 2px; height: 8px; width: 220px; overflow: hidden; margin-left: auto; border: 1px solid rgba(255,68,68,0.3);">
+          <div style="background: linear-gradient(90deg, #ff0033, #ff3366); height: 100%; width: 60%; box-shadow: 0 0 10px rgba(255,0,51,0.5), inset 0 1px 0 rgba(255,255,255,0.3);"></div>
+        </div>
+        <div style="font-size: 10px; color: #bb5555; margin-top: 3px; letter-spacing: 1px;">60 / 100 HP</div>
+      </div>
+    </div>
+
+    <!-- Arena -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 50px; height: 370px; position: relative; z-index: 2;">
+
+      <!-- Player Character -->
+      <div style="text-align: center; position: relative;">
+        <!-- Glow base -->
+        <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 100px; height: 20px; background: radial-gradient(ellipse, rgba(0,150,255,0.4) 0%, transparent 70%); filter: blur(4px);"></div>
+        <!-- Character -->
+        <div style="width: 130px; height: 200px; background: linear-gradient(180deg, #1a3366 0%, #0d1a33 50%, #1a3366 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 56px; border: 2px solid rgba(68,136,255,0.4); box-shadow: 0 0 30px rgba(0,100,255,0.2), inset 0 0 30px rgba(0,100,255,0.1); position: relative;">
+          🛡️
+          <!-- Energy lines -->
+          <div style="position: absolute; left: -20px; top: 30%; width: 15px; height: 2px; background: linear-gradient(90deg, transparent, #4488ff); opacity: 0.6;"></div>
+          <div style="position: absolute; left: -15px; top: 50%; width: 10px; height: 2px; background: linear-gradient(90deg, transparent, #4488ff); opacity: 0.4;"></div>
+        </div>
+        <div style="margin-top: 10px; font-size: 11px; color: #00ccff; background: rgba(0,150,255,0.15); padding: 4px 14px; border-radius: 2px; letter-spacing: 2px; text-transform: uppercase; border: 1px solid rgba(0,150,255,0.2); text-shadow: 0 0 6px rgba(0,200,255,0.4);">Shield Up</div>
+      </div>
+
+      <!-- Center - Impact effect -->
+      <div style="text-align: center; margin-bottom: 80px; position: relative;">
+        <div style="font-size: 16px; color: #ffcc00; font-weight: 900; letter-spacing: 6px; text-shadow: 0 0 20px rgba(255,204,0,0.6), 0 0 40px rgba(255,150,0,0.3); text-transform: uppercase;">BLOCKED!</div>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: radial-gradient(circle, rgba(255,204,0,0.15) 0%, transparent 70%); pointer-events: none;"></div>
+        <!-- Combo counter -->
+        <div style="margin-top: 12px; font-size: 28px; font-weight: 900; color: #ff6600; text-shadow: 0 0 15px rgba(255,100,0,0.5); letter-spacing: 2px;">x3</div>
+        <div style="font-size: 9px; color: #996633; letter-spacing: 3px; text-transform: uppercase;">COMBO</div>
+      </div>
+
+      <!-- Enemy Character -->
+      <div style="text-align: center; position: relative;">
+        <!-- Glow base -->
+        <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 100px; height: 20px; background: radial-gradient(ellipse, rgba(255,50,50,0.4) 0%, transparent 70%); filter: blur(4px);"></div>
+        <!-- Character -->
+        <div style="width: 130px; height: 200px; background: linear-gradient(180deg, #4d1a1a 0%, #1a0a0a 50%, #4d1a1a 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 56px; border: 2px solid rgba(255,68,68,0.4); box-shadow: 0 0 30px rgba(255,0,0,0.2), inset 0 0 30px rgba(255,0,0,0.1); position: relative;">
+          ⚔️
+          <!-- Energy lines -->
+          <div style="position: absolute; right: -20px; top: 30%; width: 15px; height: 2px; background: linear-gradient(270deg, transparent, #ff4444); opacity: 0.6;"></div>
+          <div style="position: absolute; right: -15px; top: 50%; width: 10px; height: 2px; background: linear-gradient(270deg, transparent, #ff4444); opacity: 0.4;"></div>
+        </div>
+        <div style="margin-top: 10px; font-size: 11px; color: #ff4444; background: rgba(255,50,50,0.15); padding: 4px 14px; border-radius: 2px; letter-spacing: 2px; text-transform: uppercase; border: 1px solid rgba(255,50,50,0.2); text-shadow: 0 0 6px rgba(255,50,50,0.4);">Striking</div>
+      </div>
+    </div>
+
+    <!-- Bottom bar - sleek webcam -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%); padding: 12px 24px; display: flex; align-items: center; gap: 16px; z-index: 2;">
+      <div style="width: 80px; height: 60px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #555; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 0 10px rgba(0,0,0,0.5);">📷 LIVE</div>
+      <div>
+        <div style="font-size: 9px; color: #555; letter-spacing: 2px; text-transform: uppercase;">Gesture</div>
+        <div style="font-size: 14px; color: #00ffcc; font-weight: 700; letter-spacing: 1px; text-shadow: 0 0 8px rgba(0,255,200,0.3);">BLOCK LEFT <span style="color: #666; font-weight: 400; font-size: 11px;">94%</span></div>
+      </div>
+      <div style="margin-left: auto; text-align: right;">
+        <div style="font-size: 9px; color: #555; letter-spacing: 2px;">REACTION</div>
+        <div style="font-size: 14px; color: #ffcc00; font-weight: 700; text-shadow: 0 0 8px rgba(255,204,0,0.3);">0.32s</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div style="margin-top: 24px;">
+  <h3>AAA Visual Features</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;">
+    <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 6px; border-left: 3px solid #4488ff;">
+      <div style="font-size: 12px; font-weight: 700; color: #88bbff; letter-spacing: 1px; margin-bottom: 6px;">ATMOSPHERE</div>
+      <ul style="color: #aaa; font-size: 12px; line-height: 1.8; margin: 0; padding-left: 16px;">
+        <li>Dark cinematic background with color grading</li>
+        <li>Floating particle system</li>
+        <li>Character glow effects & energy auras</li>
+        <li>Radial light sources on arena floor</li>
+      </ul>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 6px; border-left: 3px solid #ff4444;">
+      <div style="font-size: 12px; font-weight: 700; color: #ff8888; letter-spacing: 1px; margin-bottom: 6px;">COMBAT FEEDBACK</div>
+      <ul style="color: #aaa; font-size: 12px; line-height: 1.8; margin: 0; padding-left: 16px;">
+        <li>Screen shake on heavy hits</li>
+        <li>Combo counter with escalating glow</li>
+        <li>Impact flash & spark particles on clash</li>
+        <li>Damage numbers floating up</li>
+      </ul>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 6px; border-left: 3px solid #00ccff;">
+      <div style="font-size: 12px; font-weight: 700; color: #66ddff; letter-spacing: 1px; margin-bottom: 6px;">HUD DESIGN</div>
+      <ul style="color: #aaa; font-size: 12px; line-height: 1.8; margin: 0; padding-left: 16px;">
+        <li>Slim glowing HP bars with gradient fills</li>
+        <li>Character portraits with faction icons</li>
+        <li>Minimal webcam overlay in corner</li>
+        <li>Reaction time display</li>
+      </ul>
+    </div>
+    <div style="background: rgba(255,255,255,0.05); padding: 14px; border-radius: 6px; border-left: 3px solid #ffcc00;">
+      <div style="font-size: 12px; font-weight: 700; color: #ffdd44; letter-spacing: 1px; margin-bottom: 6px;">ANIMATION</div>
+      <ul style="color: #aaa; font-size: 12px; line-height: 1.8; margin: 0; padding-left: 16px;">
+        <li>Smooth sprite transitions between poses</li>
+        <li>Idle breathing animation</li>
+        <li>Attack wind-up & follow-through</li>
+        <li>Hit stagger & recovery frames</li>
+      </ul>
+    </div>
+  </div>
+</div>

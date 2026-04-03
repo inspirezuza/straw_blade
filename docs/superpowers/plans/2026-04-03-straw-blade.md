@@ -1,0 +1,2911 @@
+# Straw Blade Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a single-file HTML/JS/Canvas gesture-controlled combat game ("Straw Blade") that uses a Teachable Machine ML model for real-time gesture recognition.
+
+**Architecture:** One self-contained HTML file with embedded JS. All game logic organized as module objects (AudioManager, CombatEngine, Renderer, etc.) inside a single `<script>` tag. Canvas 2D for rendering, Web Audio API for sound, TensorFlow.js + Teachable Machine library loaded from CDN. Game loop via `requestAnimationFrame`, ML predictions on a separate `setInterval` timer.
+
+**Tech Stack:** Vanilla HTML/JS/Canvas, TensorFlow.js (CDN), Teachable Machine Image Library (CDN), Google Fonts (Orbitron, Rajdhani), Web Audio API.
+
+**Spec:** `docs/superpowers/specs/2026-04-03-straw-blade-design.md`
+
+---
+
+## File Structure
+
+This project is a single file:
+
+- **Create:** `index.html` — the entire game (HTML structure, embedded CSS, embedded JS with all modules)
+
+All "modules" below are JS objects/classes defined within a single `<script>` block inside `index.html`.
+
+---
+
+### Task 1: HTML Scaffold + Canvas + Game Loop + State Machine
+
+**Files:**
+- Create: `index.html`
+
+**What this builds:** The foundation — an HTML page with a full-screen canvas, Google Fonts loaded, a game loop running at 60fps, and a state machine that can switch between screens. After this task, you'll see a dark background with "STRAW BLADE" rendered in Orbitron font, and clicking anywhere transitions to a placeholder combat state.
+
+- [ ] **Step 1: Create the HTML scaffold with canvas and fonts**
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Straw Blade</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <script>
+  // === CONSTANTS ===
+  const CANVAS_W = 960;
+  const CANVAS_H = 640;
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+
+  // === STATE MACHINE ===
+  const GameState = {
+    TITLE: 'title',
+    WEBCAM_SETUP: 'webcam_setup',
+    LEVEL_INTRO: 'level_intro',
+    COMBAT: 'combat',
+    LEVEL_CLEAR: 'level_clear',
+    GAME_OVER: 'game_over',
+    VICTORY: 'victory'
+  };
+
+  let currentState = GameState.TITLE;
+  let previousState = null;
+
+  function setState(newState) {
+    previousState = currentState;
+    currentState = newState;
+    onStateEnter(newState);
+  }
+
+  function onStateEnter(state) {
+    // Will be filled in by each screen module
+  }
+
+  // === GAME LOOP ===
+  let lastTime = 0;
+
+  function gameLoop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05); // cap delta at 50ms
+    lastTime = timestamp;
+
+    update(dt);
+    render();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function update(dt) {
+    switch (currentState) {
+      case GameState.TITLE: updateTitle(dt); break;
+      case GameState.COMBAT: updateCombat(dt); break;
+    }
+  }
+
+  function render() {
+    // Clear with dark background
+    ctx.fillStyle = '#060612';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Background gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    bgGrad.addColorStop(0, '#060612');
+    bgGrad.addColorStop(0.4, '#12082a');
+    bgGrad.addColorStop(1, '#0a0a20');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    switch (currentState) {
+      case GameState.TITLE: renderTitle(); break;
+      case GameState.COMBAT: renderCombat(); break;
+    }
+  }
+
+  // === TITLE SCREEN (placeholder) ===
+  let titleTime = 0;
+
+  function updateTitle(dt) {
+    titleTime += dt;
+  }
+
+  function renderTitle() {
+    // Title text
+    const glow = 0.5 + 0.5 * Math.sin(titleTime * 2);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 64px Orbitron';
+    ctx.shadowColor = `rgba(255, 204, 0, ${glow * 0.8})`;
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('STRAW BLADE', CANVAS_W / 2, CANVAS_H / 2 - 40);
+    ctx.restore();
+
+    // Start prompt
+    const alpha = 0.5 + 0.5 * Math.sin(titleTime * 3);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '700 24px Rajdhani';
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.fillText('CLICK TO START', CANVAS_W / 2, CANVAS_H / 2 + 40);
+    ctx.restore();
+  }
+
+  // === COMBAT SCREEN (placeholder) ===
+  function updateCombat(dt) {}
+
+  function renderCombat() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '700 32px Rajdhani';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('COMBAT STATE - PLACEHOLDER', CANVAS_W / 2, CANVAS_H / 2);
+    ctx.restore();
+  }
+
+  // === INPUT ===
+  canvas.addEventListener('click', () => {
+    if (currentState === GameState.TITLE) {
+      setState(GameState.WEBCAM_SETUP);
+    }
+  });
+
+  // === START ===
+  requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
+```
+
+- [ ] **Step 2: Verify in browser**
+
+Open `index.html` in a browser.
+
+Expected:
+- Dark purple/navy gradient background fills the canvas
+- "STRAW BLADE" renders in large white Orbitron font with pulsing gold glow
+- "CLICK TO START" pulses below
+- Clicking transitions to "COMBAT STATE - PLACEHOLDER" text
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: scaffold with canvas, game loop, state machine, title screen"
+```
+
+---
+
+### Task 2: Webcam + Teachable Machine Model Integration
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** Loads the webcam, loads the Teachable Machine model from a URL, runs predictions every 200ms, and stores the current gesture + confidence. After this task, clicking START on the title screen shows a webcam setup screen with the camera feed and detected gesture label.
+
+**Important:** The user must replace `MODEL_URL` with their actual Teachable Machine model URL after exporting.
+
+- [ ] **Step 1: Add TensorFlow.js and Teachable Machine CDN scripts**
+
+Add these lines right before the closing `</head>` tag:
+
+```html
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+```
+
+- [ ] **Step 2: Add the GestureDetector module**
+
+Add this code right after the `// === CONSTANTS ===` section, before the state machine:
+
+```javascript
+  // === GESTURE DETECTOR ===
+  const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/';
+  // ^^^ REPLACE with your actual Teachable Machine model URL ^^^
+
+  const GestureDetector = {
+    model: null,
+    webcam: null,
+    video: null,
+    currentGesture: 'idle',
+    confidence: 0,
+    allPredictions: [],
+    isReady: false,
+    predictionInterval: null,
+
+    async init() {
+      // Load model
+      const modelURL = MODEL_URL + 'model.json';
+      const metadataURL = MODEL_URL + 'metadata.json';
+      this.model = await tmImage.load(modelURL, metadataURL);
+
+      // Setup webcam
+      this.video = document.createElement('video');
+      this.video.setAttribute('playsinline', '');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 224, height: 224, facingMode: 'user' }
+      });
+      this.video.srcObject = stream;
+      await this.video.play();
+
+      this.isReady = true;
+      this.startPredictions();
+    },
+
+    startPredictions() {
+      this.predictionInterval = setInterval(async () => {
+        if (!this.model || !this.video) return;
+        const predictions = await this.model.predict(this.video);
+        this.allPredictions = predictions;
+
+        // Find highest confidence class
+        let best = predictions[0];
+        for (const p of predictions) {
+          if (p.probability > best.probability) best = p;
+        }
+        this.currentGesture = best.className;
+        this.confidence = best.probability;
+      }, 200);
+    },
+
+    stop() {
+      if (this.predictionInterval) clearInterval(this.predictionInterval);
+      if (this.video && this.video.srcObject) {
+        this.video.srcObject.getTracks().forEach(t => t.stop());
+      }
+    },
+
+    drawWebcamPreview(x, y, w, h) {
+      if (!this.video) return;
+      ctx.save();
+      ctx.drawImage(this.video, x, y, w, h);
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x, y, w, h);
+      ctx.restore();
+    }
+  };
+```
+
+- [ ] **Step 3: Add the webcam setup screen**
+
+Add this code after the title screen section:
+
+```javascript
+  // === WEBCAM SETUP SCREEN ===
+  let webcamSetupStatus = 'loading'; // 'loading', 'ready', 'error'
+  let webcamSetupTime = 0;
+
+  async function enterWebcamSetup() {
+    webcamSetupStatus = 'loading';
+    try {
+      await GestureDetector.init();
+      webcamSetupStatus = 'ready';
+    } catch (e) {
+      console.error('Webcam/model error:', e);
+      webcamSetupStatus = 'error';
+    }
+  }
+
+  function updateWebcamSetup(dt) {
+    webcamSetupTime += dt;
+  }
+
+  function renderWebcamSetup() {
+    ctx.save();
+    ctx.textAlign = 'center';
+
+    if (webcamSetupStatus === 'loading') {
+      ctx.font = '700 28px Rajdhani';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('LOADING CAMERA & MODEL...', CANVAS_W / 2, CANVAS_H / 2 - 20);
+      const dots = '.'.repeat(Math.floor(webcamSetupTime * 2) % 4);
+      ctx.font = '600 22px Rajdhani';
+      ctx.fillStyle = '#888';
+      ctx.fillText('Please allow camera access' + dots, CANVAS_W / 2, CANVAS_H / 2 + 20);
+    } else if (webcamSetupStatus === 'error') {
+      ctx.font = '700 28px Rajdhani';
+      ctx.fillStyle = '#ff4444';
+      ctx.fillText('CAMERA OR MODEL ERROR', CANVAS_W / 2, CANVAS_H / 2 - 20);
+      ctx.font = '600 20px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('Check camera permissions and model URL', CANVAS_W / 2, CANVAS_H / 2 + 20);
+    } else if (webcamSetupStatus === 'ready') {
+      // Show webcam feed large
+      GestureDetector.drawWebcamPreview(CANVAS_W / 2 - 160, 100, 320, 240);
+
+      // Show detected gesture
+      ctx.font = '700 22px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('DETECTED GESTURE:', CANVAS_W / 2, 380);
+      ctx.font = '800 36px Orbitron';
+      ctx.fillStyle = '#00ffcc';
+      ctx.shadowColor = 'rgba(0,255,200,0.5)';
+      ctx.shadowBlur = 15;
+      ctx.fillText(GestureDetector.currentGesture.toUpperCase(), CANVAS_W / 2, 420);
+      ctx.shadowBlur = 0;
+      ctx.font = '600 20px Rajdhani';
+      ctx.fillStyle = '#888';
+      ctx.fillText(`Confidence: ${Math.round(GestureDetector.confidence * 100)}%`, CANVAS_W / 2, 455);
+
+      // Start prompt
+      const alpha = 0.5 + 0.5 * Math.sin(webcamSetupTime * 3);
+      ctx.font = '700 24px Rajdhani';
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fillText('CLICK TO BEGIN COMBAT', CANVAS_W / 2, 530);
+    }
+
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 4: Wire webcam setup into state machine and input**
+
+Update `onStateEnter`:
+
+```javascript
+  function onStateEnter(state) {
+    if (state === GameState.WEBCAM_SETUP) {
+      webcamSetupTime = 0;
+      enterWebcamSetup();
+    }
+  }
+```
+
+Update `update()` to add the webcam_setup case:
+
+```javascript
+  function update(dt) {
+    switch (currentState) {
+      case GameState.TITLE: updateTitle(dt); break;
+      case GameState.WEBCAM_SETUP: updateWebcamSetup(dt); break;
+      case GameState.COMBAT: updateCombat(dt); break;
+    }
+  }
+```
+
+Update `render()` to add the webcam_setup case:
+
+```javascript
+  function render() {
+    ctx.fillStyle = '#060612';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    bgGrad.addColorStop(0, '#060612');
+    bgGrad.addColorStop(0.4, '#12082a');
+    bgGrad.addColorStop(1, '#0a0a20');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    switch (currentState) {
+      case GameState.TITLE: renderTitle(); break;
+      case GameState.WEBCAM_SETUP: renderWebcamSetup(); break;
+      case GameState.COMBAT: renderCombat(); break;
+    }
+  }
+```
+
+Update the click handler:
+
+```javascript
+  canvas.addEventListener('click', () => {
+    if (currentState === GameState.TITLE) {
+      setState(GameState.WEBCAM_SETUP);
+    } else if (currentState === GameState.WEBCAM_SETUP && webcamSetupStatus === 'ready') {
+      setState(GameState.LEVEL_INTRO);
+    }
+  });
+```
+
+- [ ] **Step 5: Verify in browser**
+
+Open `index.html` in a browser.
+
+Expected:
+- Click START on title → "LOADING CAMERA & MODEL..." appears
+- Browser prompts for camera permission
+- After allowing, webcam feed shows large in center
+- Detected gesture label updates in real time (e.g., "IDLE 87%")
+- Performing gestures with straw changes the detected class
+- Note: will show model error if MODEL_URL hasn't been replaced yet — that's expected
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: webcam + Teachable Machine model integration"
+```
+
+---
+
+### Task 3: Player Character Rendering
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** A module that draws the player character as a humanoid silhouette with canvas 2D paths. Supports 6 poses: idle, block_left, block_right, attack, dodge, hit_stagger. After this task, the combat screen shows the player character cycling through poses.
+
+- [ ] **Step 1: Add the PlayerRenderer module**
+
+Add this code after the GestureDetector module:
+
+```javascript
+  // === PLAYER RENDERER ===
+  const PlayerRenderer = {
+    x: 160,
+    y: 380,
+    currentPose: 'idle',
+    poseTime: 0,
+
+    draw(pose, time) {
+      this.currentPose = pose;
+      this.poseTime = time;
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      // Floor glow
+      ctx.beginPath();
+      const floorGrad = ctx.createRadialGradient(0, 110, 0, 0, 110, 60);
+      floorGrad.addColorStop(0, 'rgba(0,150,255,0.4)');
+      floorGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = floorGrad;
+      ctx.fillRect(-60, 90, 120, 40);
+
+      // Aura glow
+      const auraPulse = 0.6 + 0.4 * Math.sin(time * 3);
+      ctx.shadowColor = `rgba(0,100,255,${auraPulse * 0.5})`;
+      ctx.shadowBlur = 20;
+
+      switch (pose) {
+        case 'idle': this.drawIdle(); break;
+        case 'block_left': this.drawBlockLeft(); break;
+        case 'block_right': this.drawBlockRight(); break;
+        case 'attack': this.drawAttack(); break;
+        case 'dodge': this.drawDodge(); break;
+        case 'hit_stagger': this.drawHitStagger(); break;
+        default: this.drawIdle(); break;
+      }
+
+      ctx.restore();
+    },
+
+    // Helper: draw head
+    drawHead(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.arc(offsetX, offsetY - 82, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a3a6e';
+      ctx.fill();
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Visor
+      ctx.fillStyle = 'rgba(0,220,255,0.8)';
+      ctx.fillRect(offsetX - 12, offsetY - 86, 24, 5);
+    },
+
+    // Helper: draw torso
+    drawTorso(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 25, offsetY - 62);
+      ctx.lineTo(offsetX + 25, offsetY - 62);
+      ctx.lineTo(offsetX + 28, offsetY);
+      ctx.lineTo(offsetX - 28, offsetY);
+      ctx.closePath();
+      const tGrad = ctx.createLinearGradient(0, offsetY - 62, 0, offsetY);
+      tGrad.addColorStop(0, '#2255cc');
+      tGrad.addColorStop(1, '#0d1a33');
+      ctx.fillStyle = tGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Shoulder pads
+      ctx.beginPath();
+      ctx.ellipse(offsetX - 27, offsetY - 60, 11, 7, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#2255cc';
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(offsetX + 27, offsetY - 60, 11, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    },
+
+    // Helper: draw legs
+    drawLegs(offsetX, offsetY, spread) {
+      const s = spread || 0;
+      ctx.strokeStyle = '#3366bb';
+      ctx.lineWidth = 1.5;
+      // Left leg
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 12, offsetY);
+      ctx.lineTo(offsetX - 18 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 8 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 5, offsetY + 5);
+      ctx.fillStyle = '#0d1a33';
+      ctx.fill();
+      ctx.stroke();
+      // Right leg
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 12, offsetY);
+      ctx.lineTo(offsetX + 18 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 8 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 5, offsetY + 5);
+      ctx.fill();
+      ctx.stroke();
+      // Boots
+      ctx.fillStyle = '#1a3366';
+      ctx.strokeStyle = '#55aaff';
+      ctx.fillRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.fillRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+    },
+
+    drawIdle() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      // Arms at sides
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      // Left arm
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-38, -30);
+      ctx.lineTo(-35, 0);
+      ctx.lineTo(-28, -2);
+      ctx.lineTo(-30, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Right arm holding straw
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(38, -30);
+      ctx.lineTo(35, 0);
+      ctx.lineTo(28, -2);
+      ctx.lineTo(30, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Straw blade (held down)
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(36, -2);
+      ctx.lineTo(42, -40);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffeeaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(42, -40);
+      ctx.lineTo(44, -50);
+      ctx.stroke();
+
+      this.drawLegs(0, 0);
+    },
+
+    drawBlockLeft() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      // Left arm raised with shield
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-45, -55);
+      ctx.lineTo(-50, -15);
+      ctx.lineTo(-35, -10);
+      ctx.lineTo(-32, -50);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Shield
+      ctx.beginPath();
+      ctx.ellipse(-52, -35, 15, 22, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#2255cc';
+      ctx.fill();
+      ctx.strokeStyle = '#77bbff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      // Shield cross
+      ctx.strokeStyle = 'rgba(150,200,255,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-52, -55);
+      ctx.lineTo(-52, -15);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-65, -35);
+      ctx.lineTo(-39, -35);
+      ctx.stroke();
+      // Right arm
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(35, -35);
+      ctx.lineTo(32, -5);
+      ctx.lineTo(25, -7);
+      ctx.lineTo(28, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Straw held back
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(33, -7);
+      ctx.lineTo(38, -45);
+      ctx.stroke();
+
+      this.drawLegs(0, 0);
+    },
+
+    drawBlockRight() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      // Left arm
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-35, -35);
+      ctx.lineTo(-32, -5);
+      ctx.lineTo(-25, -7);
+      ctx.lineTo(-28, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Right arm raised with straw as shield
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(45, -55);
+      ctx.lineTo(50, -15);
+      ctx.lineTo(35, -10);
+      ctx.lineTo(32, -50);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Straw blade held horizontally as guard
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(40, -55);
+      ctx.lineTo(48, -10);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffeeaa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(40, -55);
+      ctx.lineTo(38, -62);
+      ctx.stroke();
+
+      this.drawLegs(0, 0);
+    },
+
+    drawAttack() {
+      this.drawHead(5, 0);
+      this.drawTorso(5, 0);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      // Left arm back
+      ctx.beginPath();
+      ctx.moveTo(-20, -58);
+      ctx.lineTo(-35, -40);
+      ctx.lineTo(-30, -10);
+      ctx.lineTo(-23, -12);
+      ctx.lineTo(-28, -38);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Right arm extended forward with straw
+      ctx.beginPath();
+      ctx.moveTo(30, -55);
+      ctx.lineTo(55, -50);
+      ctx.lineTo(65, -35);
+      ctx.lineTo(55, -32);
+      ctx.lineTo(48, -45);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Straw blade thrust forward
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(63, -34);
+      ctx.lineTo(110, -38);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffeeaa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(110, -38);
+      ctx.lineTo(120, -39);
+      ctx.stroke();
+      // Straw glow
+      ctx.strokeStyle = 'rgba(255,220,0,0.15)';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(63, -34);
+      ctx.lineTo(120, -39);
+      ctx.stroke();
+
+      this.drawLegs(5, 0, 5);
+    },
+
+    drawDodge() {
+      // Crouching / ducking pose — shift everything down and tilt
+      ctx.save();
+      ctx.translate(0, 25);
+      ctx.rotate(-0.15);
+
+      this.drawHead(-10, 10);
+      this.drawTorso(-5, 10);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      // Both arms tucked
+      ctx.beginPath();
+      ctx.moveTo(-30, -48);
+      ctx.lineTo(-40, -25);
+      ctx.lineTo(-30, -5);
+      ctx.lineTo(-23, -8);
+      ctx.lineTo(-33, -25);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(20, -48);
+      ctx.lineTo(30, -25);
+      ctx.lineTo(25, -5);
+      ctx.lineTo(18, -8);
+      ctx.lineTo(23, -25);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Straw held close
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(26, -7);
+      ctx.lineTo(15, -45);
+      ctx.stroke();
+
+      this.drawLegs(-5, 10, 10);
+      ctx.restore();
+    },
+
+    drawHitStagger() {
+      // Leaning back, hurt pose
+      ctx.save();
+      ctx.rotate(0.1);
+
+      this.drawHead(-8, 5);
+      this.drawTorso(-5, 5);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      // Arms flung out
+      ctx.beginPath();
+      ctx.moveTo(-30, -53);
+      ctx.lineTo(-50, -35);
+      ctx.lineTo(-48, -10);
+      ctx.lineTo(-40, -12);
+      ctx.lineTo(-43, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(20, -53);
+      ctx.lineTo(45, -30);
+      ctx.lineTo(50, -5);
+      ctx.lineTo(42, -7);
+      ctx.lineTo(38, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Straw dropped/loose
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(48, -8);
+      ctx.lineTo(60, 15);
+      ctx.stroke();
+
+      this.drawLegs(-5, 5);
+      ctx.restore();
+    }
+  };
+```
+
+- [ ] **Step 2: Add a pose demo to the combat screen for testing**
+
+Replace the `updateCombat` and `renderCombat` functions:
+
+```javascript
+  // === COMBAT SCREEN ===
+  let combatTime = 0;
+
+  function updateCombat(dt) {
+    combatTime += dt;
+  }
+
+  function renderCombat() {
+    // Draw player with current gesture from webcam
+    const pose = GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
+    PlayerRenderer.draw(pose, combatTime);
+
+    // Debug: show current pose
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '700 20px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Pose: ' + pose, PlayerRenderer.x, CANVAS_H - 20);
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 3: Verify in browser**
+
+Open `index.html`, click START, allow camera.
+
+Expected:
+- Player character renders as a blue humanoid silhouette on the left
+- Character pose changes in real time based on webcam gesture (idle, block_left, block_right, attack, dodge)
+- Character has blue glow aura, floor glow, shoulder pads, visor
+- Straw blade visible in the character's hand (yellow)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: player character renderer with 6 pose frames"
+```
+
+---
+
+### Task 4: Enemy Character Rendering
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** The enemy character — a red horned demon silhouette with poses for guard, telegraph_left, telegraph_right, telegraph_thrust, attack_left, attack_right, attack_thrust, and recovery. After this task, the enemy renders on the right side of the arena.
+
+- [ ] **Step 1: Add the EnemyRenderer module**
+
+Add after the PlayerRenderer module:
+
+```javascript
+  // === ENEMY RENDERER ===
+  const EnemyRenderer = {
+    x: 780,
+    y: 380,
+    currentPose: 'guard',
+    poseTime: 0,
+
+    draw(pose, time) {
+      this.currentPose = pose;
+      this.poseTime = time;
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      // Floor glow
+      const floorGrad = ctx.createRadialGradient(0, 110, 0, 0, 110, 60);
+      floorGrad.addColorStop(0, 'rgba(255,50,50,0.4)');
+      floorGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = floorGrad;
+      ctx.fillRect(-60, 90, 120, 40);
+
+      // Aura
+      const auraPulse = 0.6 + 0.4 * Math.sin(time * 3);
+      ctx.shadowColor = `rgba(255,50,50,${auraPulse * 0.5})`;
+      ctx.shadowBlur = 20;
+
+      switch (pose) {
+        case 'guard': this.drawGuard(); break;
+        case 'telegraph_left': this.drawTelegraph('left'); break;
+        case 'telegraph_right': this.drawTelegraph('right'); break;
+        case 'telegraph_thrust': this.drawTelegraph('thrust'); break;
+        case 'attack_left': this.drawAttack('left'); break;
+        case 'attack_right': this.drawAttack('right'); break;
+        case 'attack_thrust': this.drawAttackThrust(); break;
+        case 'recovery': this.drawRecovery(); break;
+        default: this.drawGuard(); break;
+      }
+
+      ctx.restore();
+    },
+
+    drawHead(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.arc(offsetX, offsetY - 82, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#4d1a1a';
+      ctx.fill();
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Horns
+      ctx.fillStyle = '#661111';
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 10, offsetY - 94);
+      ctx.lineTo(offsetX - 18, offsetY - 112);
+      ctx.lineTo(offsetX - 6, offsetY - 92);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 10, offsetY - 94);
+      ctx.lineTo(offsetX + 18, offsetY - 112);
+      ctx.lineTo(offsetX + 6, offsetY - 92);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Eyes
+      ctx.fillStyle = '#ff2200';
+      ctx.beginPath();
+      ctx.arc(offsetX - 6, offsetY - 84, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(offsetX + 6, offsetY - 84, 3, 0, Math.PI * 2);
+      ctx.fill();
+    },
+
+    drawTorso(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 25, offsetY - 62);
+      ctx.lineTo(offsetX + 25, offsetY - 62);
+      ctx.lineTo(offsetX + 28, offsetY);
+      ctx.lineTo(offsetX - 28, offsetY);
+      ctx.closePath();
+      const tGrad = ctx.createLinearGradient(0, offsetY - 62, 0, offsetY);
+      tGrad.addColorStop(0, '#cc2222');
+      tGrad.addColorStop(1, '#1a0a0a');
+      ctx.fillStyle = tGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Shoulder spikes
+      ctx.fillStyle = '#661111';
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 27, offsetY - 58);
+      ctx.lineTo(offsetX - 40, offsetY - 70);
+      ctx.lineTo(offsetX - 22, offsetY - 55);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 27, offsetY - 58);
+      ctx.lineTo(offsetX + 40, offsetY - 70);
+      ctx.lineTo(offsetX + 22, offsetY - 55);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    },
+
+    drawLegs(offsetX, offsetY, spread) {
+      const s = spread || 0;
+      ctx.strokeStyle = '#bb3333';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#2a0a0a';
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 12, offsetY);
+      ctx.lineTo(offsetX - 18 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 8 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 5, offsetY + 5);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 12, offsetY);
+      ctx.lineTo(offsetX + 18 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 8 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 5, offsetY + 5);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#4d1a1a';
+      ctx.strokeStyle = '#ff5555';
+      ctx.fillRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.fillRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+    },
+
+    drawSword(startX, startY, endX, endY) {
+      ctx.strokeStyle = '#ff7777';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffaaaa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX + (endX - startX) * 0.15, endY + (endY - startY) * 0.15);
+      ctx.stroke();
+      // Sword glow
+      ctx.strokeStyle = 'rgba(255,0,0,0.15)';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    },
+
+    drawGuard() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+      // Left arm
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-38, -30);
+      ctx.lineTo(-35, 0);
+      ctx.lineTo(-28, -2);
+      ctx.lineTo(-30, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Right arm holding sword
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(38, -35);
+      ctx.lineTo(35, -5);
+      ctx.lineTo(28, -7);
+      ctx.lineTo(30, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      this.drawSword(36, -7, 42, -50);
+      this.drawLegs(0, 0);
+    },
+
+    drawTelegraph(direction) {
+      // Wind-up pose — arm pulled back, shows attack direction
+      this.drawHead(direction === 'thrust' ? -5 : 0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+
+      if (direction === 'left') {
+        // Sword arm pulled to the right (their right = player's left)
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-35, -35);
+        ctx.lineTo(-32, -10);
+        ctx.lineTo(-25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(50, -55);
+        ctx.lineTo(55, -30);
+        ctx.lineTo(45, -28);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(53, -30, 65, -60);
+        // Telegraph indicator — flashing arrow
+        const flash = Math.sin(this.poseTime * 12) > 0 ? 1 : 0.3;
+        ctx.fillStyle = `rgba(255,255,0,${flash})`;
+        ctx.font = '900 28px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('◄', -80, -30);
+      } else if (direction === 'right') {
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-50, -55);
+        ctx.lineTo(-55, -30);
+        ctx.lineTo(-45, -28);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(-53, -30, -65, -60);
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(35, -35);
+        ctx.lineTo(32, -10);
+        ctx.lineTo(25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        const flash = Math.sin(this.poseTime * 12) > 0 ? 1 : 0.3;
+        ctx.fillStyle = `rgba(255,255,0,${flash})`;
+        ctx.font = '900 28px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('►', 80, -30);
+      } else {
+        // Thrust telegraph — pulling back
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-35, -35);
+        ctx.lineTo(-32, -10);
+        ctx.lineTo(-25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(45, -60);
+        ctx.lineTo(55, -45);
+        ctx.lineTo(42, -42);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(53, -45, 70, -55);
+        const flash = Math.sin(this.poseTime * 12) > 0 ? 1 : 0.3;
+        ctx.fillStyle = `rgba(255,0,0,${flash})`;
+        ctx.font = '900 22px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠ THRUST', 0, -120);
+      }
+
+      this.drawLegs(0, 0);
+    },
+
+    drawAttack(direction) {
+      this.drawHead(direction === 'left' ? -5 : 5, 0);
+      this.drawTorso(direction === 'left' ? -3 : 3, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+
+      if (direction === 'left') {
+        // Slashing to the left (toward player)
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-35, -35);
+        ctx.lineTo(-32, -10);
+        ctx.lineTo(-25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(20, -55);
+        ctx.lineTo(-10, -45);
+        ctx.lineTo(-30, -25);
+        ctx.lineTo(-22, -20);
+        ctx.lineTo(-5, -40);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(-28, -22, -70, -10);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(35, -35);
+        ctx.lineTo(32, -10);
+        ctx.lineTo(25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-20, -55);
+        ctx.lineTo(10, -45);
+        ctx.lineTo(30, -25);
+        ctx.lineTo(22, -20);
+        ctx.lineTo(5, -40);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(28, -22, 70, -10);
+      }
+
+      this.drawLegs(direction === 'left' ? -3 : 3, 0, 5);
+    },
+
+    drawAttackThrust() {
+      this.drawHead(-8, 0);
+      this.drawTorso(-5, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+      // Left arm back
+      ctx.beginPath();
+      ctx.moveTo(-30, -58);
+      ctx.lineTo(-40, -35);
+      ctx.lineTo(-38, -10);
+      ctx.lineTo(-30, -12);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Right arm thrust forward
+      ctx.beginPath();
+      ctx.moveTo(20, -55);
+      ctx.lineTo(-15, -48);
+      ctx.lineTo(-30, -38);
+      ctx.lineTo(-22, -33);
+      ctx.lineTo(-10, -42);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Sword thrust far left (toward player)
+      this.drawSword(-28, -35, -95, -38);
+      this.drawLegs(-5, 0, 8);
+    },
+
+    drawRecovery() {
+      // Exhausted pose — leaning forward, sword down
+      ctx.save();
+      ctx.rotate(-0.08);
+      this.drawHead(3, 5);
+      this.drawTorso(3, 5);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+      ctx.beginPath();
+      ctx.moveTo(-22, -53);
+      ctx.lineTo(-35, -25);
+      ctx.lineTo(-30, 5);
+      ctx.lineTo(-23, 3);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(28, -53);
+      ctx.lineTo(40, -25);
+      ctx.lineTo(42, 10);
+      ctx.lineTo(35, 8);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      // Sword drooping
+      this.drawSword(40, 8, 50, 50);
+      // Vulnerable indicator
+      const flash = 0.5 + 0.5 * Math.sin(this.poseTime * 8);
+      ctx.font = '800 16px Orbitron';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(0,255,150,${flash})`;
+      ctx.fillText('VULNERABLE', 0, -120);
+      this.drawLegs(3, 5);
+      ctx.restore();
+    }
+  };
+```
+
+- [ ] **Step 2: Update renderCombat to show both characters**
+
+Replace `renderCombat`:
+
+```javascript
+  function renderCombat() {
+    // Draw player
+    const playerPose = GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
+    PlayerRenderer.draw(playerPose, combatTime);
+
+    // Draw enemy (cycle through poses for testing)
+    const enemyPoses = ['guard', 'telegraph_left', 'attack_left', 'recovery', 'telegraph_right', 'attack_right', 'telegraph_thrust', 'attack_thrust'];
+    const poseIndex = Math.floor(combatTime / 1.5) % enemyPoses.length;
+    EnemyRenderer.draw(enemyPoses[poseIndex], combatTime);
+  }
+```
+
+- [ ] **Step 3: Verify in browser**
+
+Expected:
+- Player character on the left responds to webcam gestures
+- Enemy character on the right cycles through all poses every 1.5 seconds
+- Enemy has red theme, horns, glowing red eyes, shoulder spikes, sword
+- Telegraph poses show flashing direction indicators (arrows or "THRUST" warning)
+- Recovery pose shows flashing green "VULNERABLE" text
+- Both characters have floor glow and aura effects
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: enemy character renderer with 8 pose frames"
+```
+
+---
+
+### Task 5: HUD (HP Bars, Score, Gesture Display)
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** The heads-up display with player/enemy HP bars, stage/score center display, and the bottom bar showing webcam preview + gesture + reaction time. After this task the combat screen looks like the mockup.
+
+- [ ] **Step 1: Add the HUD module**
+
+Add after EnemyRenderer:
+
+```javascript
+  // === HUD ===
+  const HUD = {
+    playerHP: 100,
+    playerMaxHP: 100,
+    enemyHP: 100,
+    enemyMaxHP: 100,
+    score: 0,
+    combo: 0,
+    stage: 1,
+    playerHPFlash: 0,
+    enemyHPFlash: 0,
+    comboScale: 1,
+    reactionTime: 0,
+
+    update(dt) {
+      if (this.playerHPFlash > 0) this.playerHPFlash -= dt * 4;
+      if (this.enemyHPFlash > 0) this.enemyHPFlash -= dt * 4;
+      if (this.comboScale > 1) this.comboScale = Math.max(1, this.comboScale - dt * 4);
+    },
+
+    flashPlayerHP() { this.playerHPFlash = 1; },
+    flashEnemyHP() { this.enemyHPFlash = 1; },
+    popCombo() { this.comboScale = 1.5; },
+
+    draw(time) {
+      this.drawTopBar(time);
+      this.drawBottomBar(time);
+      if (this.combo > 1) this.drawCombo(time);
+    },
+
+    drawHPBar(x, y, w, current, max, color1, color2, borderColor, flash) {
+      const ratio = Math.max(0, current / max);
+      // Background
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, 14, 4);
+      ctx.fill();
+      // Border
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, 14, 4);
+      ctx.stroke();
+      // Fill
+      const hpGrad = ctx.createLinearGradient(x, 0, x + w * ratio, 0);
+      hpGrad.addColorStop(0, color1);
+      hpGrad.addColorStop(1, color2);
+      ctx.fillStyle = hpGrad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w * ratio, 14, 4);
+      ctx.fill();
+      // Flash overlay
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(255,255,255,${flash * 0.5})`;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, 14, 4);
+        ctx.fill();
+      }
+      // Shine
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(x + 2, y + 1, w * ratio - 4, 5);
+    },
+
+    drawTopBar(time) {
+      // Gradient overlay
+      const topGrad = ctx.createLinearGradient(0, 0, 0, 90);
+      topGrad.addColorStop(0, 'rgba(0,0,0,0.85)');
+      topGrad.addColorStop(0.8, 'rgba(0,0,0,0.3)');
+      topGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, CANVAS_W, 90);
+
+      // Player side
+      ctx.save();
+      // Icon
+      ctx.beginPath();
+      ctx.arc(36, 32, 18, 0, Math.PI * 2);
+      const iconGrad = ctx.createLinearGradient(18, 14, 54, 50);
+      iconGrad.addColorStop(0, '#1a3a6e');
+      iconGrad.addColorStop(1, '#2255cc');
+      ctx.fillStyle = iconGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('⚡', 36, 33);
+
+      // Player name
+      ctx.font = '900 16px Orbitron';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(100,180,255,0.3)';
+      ctx.shadowBlur = 10;
+      ctx.fillText('WARRIOR', 62, 18);
+      ctx.shadowBlur = 0;
+
+      // Player HP bar
+      this.drawHPBar(62, 42, 230, this.playerHP, this.playerMaxHP, '#0066ff', '#00ddff', 'rgba(68,180,255,0.5)', this.playerHPFlash);
+
+      // Player HP text
+      ctx.font = '700 13px Rajdhani';
+      ctx.fillStyle = '#bbddff';
+      ctx.fillText(`${Math.ceil(this.playerHP)} / ${this.playerMaxHP} HP`, 62, 60);
+
+      // Center - Stage
+      ctx.textAlign = 'center';
+      ctx.font = '700 12px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('STAGE', CANVAS_W / 2, 10);
+      ctx.font = '900 28px Orbitron';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(255,204,0,0.6)';
+      ctx.shadowBlur = 20;
+      const stageLabels = ['I', 'II', 'III'];
+      ctx.fillText(stageLabels[this.stage - 1] || 'I', CANVAS_W / 2, 35);
+      ctx.shadowBlur = 0;
+      ctx.font = '800 14px Orbitron';
+      ctx.fillStyle = '#ffee66';
+      ctx.shadowColor = 'rgba(255,220,0,0.3)';
+      ctx.shadowBlur = 8;
+      ctx.fillText(this.score.toLocaleString(), CANVAS_W / 2, 58);
+      ctx.shadowBlur = 0;
+
+      // Enemy side
+      ctx.textAlign = 'right';
+      // Icon
+      ctx.beginPath();
+      ctx.arc(CANVAS_W - 36, 32, 18, 0, Math.PI * 2);
+      const eIconGrad = ctx.createLinearGradient(CANVAS_W - 54, 14, CANVAS_W - 18, 50);
+      eIconGrad.addColorStop(0, '#6e1a1a');
+      eIconGrad.addColorStop(1, '#cc2222');
+      ctx.fillStyle = eIconGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('💀', CANVAS_W - 36, 33);
+
+      // Enemy name
+      const enemyNames = ['SHADOW', 'WRAITH', 'DEMON LORD'];
+      ctx.font = '900 16px Orbitron';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(255,80,80,0.3)';
+      ctx.shadowBlur = 10;
+      ctx.fillText(enemyNames[this.stage - 1] || 'SHADOW', CANVAS_W - 62, 18);
+      ctx.shadowBlur = 0;
+
+      // Enemy HP bar
+      this.drawHPBar(CANVAS_W - 292, 42, 230, this.enemyHP, this.enemyMaxHP, '#ff0033', '#ff4466', 'rgba(255,80,80,0.5)', this.enemyHPFlash);
+
+      // Enemy HP text
+      ctx.textAlign = 'right';
+      ctx.font = '700 13px Rajdhani';
+      ctx.fillStyle = '#ffaaaa';
+      ctx.fillText(`${Math.ceil(this.enemyHP)} / ${this.enemyMaxHP} HP`, CANVAS_W - 62, 60);
+
+      ctx.restore();
+    },
+
+    drawBottomBar(time) {
+      const botGrad = ctx.createLinearGradient(0, CANVAS_H - 70, 0, CANVAS_H);
+      botGrad.addColorStop(0, 'transparent');
+      botGrad.addColorStop(0.3, 'rgba(0,0,0,0.5)');
+      botGrad.addColorStop(1, 'rgba(0,0,0,0.9)');
+      ctx.fillStyle = botGrad;
+      ctx.fillRect(0, CANVAS_H - 70, CANVAS_W, 70);
+
+      // Webcam preview
+      GestureDetector.drawWebcamPreview(20, CANVAS_H - 60, 80, 52);
+
+      // Gesture label
+      ctx.save();
+      ctx.textBaseline = 'top';
+      ctx.font = '700 11px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.textAlign = 'left';
+      ctx.fillText('GESTURE', 115, CANVAS_H - 55);
+      ctx.font = '800 16px Orbitron';
+      ctx.fillStyle = '#00ffcc';
+      ctx.shadowColor = 'rgba(0,255,200,0.5)';
+      ctx.shadowBlur = 10;
+      const gestureName = GestureDetector.currentGesture.toUpperCase().replace('_', ' ');
+      ctx.fillText(gestureName, 115, CANVAS_H - 40);
+      ctx.shadowBlur = 0;
+      ctx.font = '700 13px Rajdhani';
+      ctx.fillStyle = '#888';
+      ctx.fillText(`${Math.round(GestureDetector.confidence * 100)}%`, 115, CANVAS_H - 22);
+
+      // Reaction time
+      ctx.textAlign = 'right';
+      ctx.font = '700 11px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('REACTION', CANVAS_W - 20, CANVAS_H - 55);
+      ctx.font = '800 16px Orbitron';
+      ctx.fillStyle = '#ffee55';
+      ctx.shadowColor = 'rgba(255,220,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.fillText(`${this.reactionTime.toFixed(2)}s`, CANVAS_W - 20, CANVAS_H - 40);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    },
+
+    drawCombo(time) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const scale = this.comboScale;
+      ctx.translate(CANVAS_W / 2, CANVAS_H / 2 + 40);
+      ctx.scale(scale, scale);
+      ctx.font = '900 42px Orbitron';
+      ctx.fillStyle = '#ff9900';
+      ctx.shadowColor = 'rgba(255,120,0,0.7)';
+      ctx.shadowBlur = 25;
+      ctx.fillText(`x${this.combo}`, 0, 0);
+      ctx.shadowBlur = 0;
+      ctx.font = '800 14px Orbitron';
+      ctx.fillStyle = '#ddaa44';
+      ctx.fillText('COMBO', 0, 28);
+      ctx.restore();
+    }
+  };
+```
+
+- [ ] **Step 2: Wire HUD into combat update and render**
+
+Update `updateCombat` and `renderCombat`:
+
+```javascript
+  function updateCombat(dt) {
+    combatTime += dt;
+    HUD.update(dt);
+  }
+
+  function renderCombat() {
+    const playerPose = GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
+    PlayerRenderer.draw(playerPose, combatTime);
+
+    const enemyPoses = ['guard', 'telegraph_left', 'attack_left', 'recovery'];
+    const poseIndex = Math.floor(combatTime / 1.5) % enemyPoses.length;
+    EnemyRenderer.draw(enemyPoses[poseIndex], combatTime);
+
+    HUD.draw(combatTime);
+  }
+```
+
+- [ ] **Step 3: Verify in browser**
+
+Expected:
+- Top bar: "WARRIOR" with blue HP bar (left), Stage I + score (center), "SHADOW" with red HP bar (right)
+- Bottom bar: webcam preview, gesture name in cyan, confidence %, reaction time in yellow
+- Both HP bars at full, glowing borders
+- Orbitron font on all headings, Rajdhani on secondary text
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: HUD with HP bars, score, stage, gesture display"
+```
+
+---
+
+### Task 6: Combat Engine + Enemy AI + Stage Definitions
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** The core combat logic — enemy AI state machine (guard → telegraph → attack → recovery), pre-scripted attack patterns for 3 stages, damage calculation, combo tracking, and gesture-to-combat integration. After this task, the game is playable.
+
+- [ ] **Step 1: Add stage definitions**
+
+Add after the HUD module:
+
+```javascript
+  // === STAGE DEFINITIONS ===
+  const STAGES = [
+    {
+      name: 'SHADOW',
+      telegraphDuration: 1.0,
+      recoveryDuration: 0.8,
+      damage: 10,
+      pattern: [
+        { type: 'left', delay: 2.5 },
+        { type: 'right', delay: 2.0 },
+        { type: 'left', delay: 2.5 },
+        { type: 'left', delay: 2.0 },
+        { type: 'right', delay: 3.0 },
+        { type: 'right', delay: 2.0 },
+        { type: 'left', delay: 2.5 },
+        { type: 'right', delay: 2.0 },
+        { type: 'left', delay: 2.0 },
+        { type: 'right', delay: 2.5 }
+      ]
+    },
+    {
+      name: 'WRAITH',
+      telegraphDuration: 0.7,
+      recoveryDuration: 0.6,
+      damage: 15,
+      pattern: [
+        { type: 'left', delay: 2.0 },
+        { type: 'right', delay: 1.5 },
+        { type: 'thrust', delay: 2.0 },
+        { type: 'left', delay: 1.5 },
+        { type: 'left', delay: 0.8 },  // combo
+        { type: 'right', delay: 2.0 },
+        { type: 'thrust', delay: 1.5 },
+        { type: 'right', delay: 1.5 },
+        { type: 'left', delay: 0.8 },  // combo
+        { type: 'right', delay: 1.5 },
+        { type: 'thrust', delay: 2.0 },
+        { type: 'left', delay: 1.5 }
+      ]
+    },
+    {
+      name: 'DEMON LORD',
+      telegraphDuration: 0.4,
+      recoveryDuration: 0.4,
+      damage: 20,
+      pattern: [
+        { type: 'left', delay: 1.5 },
+        { type: 'right', delay: 1.0 },
+        { type: 'left', delay: 0.6 },  // combo
+        { type: 'right', delay: 0.6 },
+        { type: 'thrust', delay: 1.5 },
+        { type: 'left', delay: 1.0 },
+        { type: 'right', delay: 0.6 },
+        { type: 'left', delay: 0.6 },
+        { type: 'thrust', delay: 0.6 },  // combo with thrust
+        { type: 'right', delay: 1.2 },
+        { type: 'left', delay: 1.0 },
+        { type: 'left', delay: 0.5 },
+        { type: 'right', delay: 0.5 },
+        { type: 'thrust', delay: 1.0 }
+      ]
+    }
+  ];
+```
+
+- [ ] **Step 2: Add the CombatEngine module**
+
+```javascript
+  // === COMBAT ENGINE ===
+  const CombatEngine = {
+    // Enemy state machine
+    enemyState: 'guard',    // guard, telegraph, attack, recovery
+    enemyStateTime: 0,
+    currentAttackType: null, // 'left', 'right', 'thrust'
+    patternIndex: 0,
+    guardTimer: 0,
+    attackResolved: false,
+
+    // Stage
+    stage: null,
+    stageIndex: 0,
+
+    // Player state
+    playerStagger: 0,
+    lastGesture: 'idle',
+    attackCooldown: 0,
+
+    // Floating damage numbers
+    damageNumbers: [],
+
+    init(stageIndex) {
+      this.stageIndex = stageIndex;
+      this.stage = STAGES[stageIndex];
+      this.enemyState = 'guard';
+      this.enemyStateTime = 0;
+      this.patternIndex = 0;
+      this.guardTimer = 0;
+      this.currentAttackType = null;
+      this.attackResolved = false;
+      this.playerStagger = 0;
+      this.attackCooldown = 0;
+      this.damageNumbers = [];
+
+      HUD.playerHP = HUD.playerMaxHP;
+      HUD.enemyHP = HUD.enemyMaxHP;
+      HUD.combo = 0;
+      HUD.score = 0;
+      HUD.stage = stageIndex + 1;
+    },
+
+    update(dt) {
+      this.enemyStateTime += dt;
+      if (this.playerStagger > 0) this.playerStagger -= dt;
+      if (this.attackCooldown > 0) this.attackCooldown -= dt;
+
+      // Update damage numbers
+      this.damageNumbers = this.damageNumbers.filter(d => {
+        d.y -= dt * 60;
+        d.alpha -= dt * 1.5;
+        return d.alpha > 0;
+      });
+
+      // Enemy state machine
+      switch (this.enemyState) {
+        case 'guard':
+          this.guardTimer += dt;
+          const nextAttack = this.stage.pattern[this.patternIndex % this.stage.pattern.length];
+          if (this.guardTimer >= nextAttack.delay) {
+            this.enemyState = 'telegraph';
+            this.enemyStateTime = 0;
+            this.currentAttackType = nextAttack.type;
+            this.attackResolved = false;
+            this.guardTimer = 0;
+          }
+          break;
+
+        case 'telegraph':
+          if (this.enemyStateTime >= this.stage.telegraphDuration) {
+            this.enemyState = 'attack';
+            this.enemyStateTime = 0;
+            this.resolveAttack();
+          }
+          break;
+
+        case 'attack':
+          if (this.enemyStateTime >= 0.3) {
+            this.enemyState = 'recovery';
+            this.enemyStateTime = 0;
+          }
+          break;
+
+        case 'recovery':
+          if (this.enemyStateTime >= this.stage.recoveryDuration) {
+            this.enemyState = 'guard';
+            this.enemyStateTime = 0;
+            this.patternIndex++;
+          }
+          break;
+      }
+
+      // Player attack during enemy recovery
+      const gesture = GestureDetector.currentGesture;
+      if (gesture === 'attack' && this.lastGesture !== 'attack' && this.attackCooldown <= 0) {
+        this.attackCooldown = 0.5;
+        if (this.enemyState === 'recovery') {
+          this.dealDamageToEnemy(15);
+        }
+      }
+      this.lastGesture = gesture;
+
+      // Check win/lose
+      if (HUD.playerHP <= 0) {
+        HUD.playerHP = 0;
+        return 'player_dead';
+      }
+      if (HUD.enemyHP <= 0) {
+        HUD.enemyHP = 0;
+        return 'enemy_dead';
+      }
+      return 'fighting';
+    },
+
+    resolveAttack() {
+      const gesture = GestureDetector.currentGesture;
+      const attackType = this.currentAttackType;
+
+      let blocked = false;
+      if (attackType === 'left' && gesture === 'block_left') blocked = true;
+      if (attackType === 'right' && gesture === 'block_right') blocked = true;
+      if (attackType === 'thrust' && gesture === 'dodge') blocked = true;
+
+      if (blocked) {
+        // Successful defense
+        HUD.combo++;
+        HUD.popCombo();
+        const points = 100 * Math.max(1, HUD.combo);
+        HUD.score += points;
+        this.addDamageNumber(CANVAS_W / 2, CANVAS_H / 2 - 30, `+${points}`, '#00ffcc');
+      } else {
+        // Hit player
+        const damage = this.stage.damage;
+        HUD.playerHP = Math.max(0, HUD.playerHP - damage);
+        HUD.flashPlayerHP();
+        HUD.combo = 0;
+        this.playerStagger = 0.5;
+        this.addDamageNumber(PlayerRenderer.x, PlayerRenderer.y - 120, `-${damage}`, '#ff4444');
+      }
+    },
+
+    dealDamageToEnemy(damage) {
+      HUD.enemyHP = Math.max(0, HUD.enemyHP - damage);
+      HUD.flashEnemyHP();
+      HUD.combo++;
+      HUD.popCombo();
+      const points = 150 * Math.max(1, HUD.combo);
+      HUD.score += points;
+      this.addDamageNumber(EnemyRenderer.x, EnemyRenderer.y - 120, `-${damage}`, '#ff8800');
+      this.addDamageNumber(CANVAS_W / 2, CANVAS_H / 2 - 60, `+${points}`, '#ffcc00');
+    },
+
+    addDamageNumber(x, y, text, color) {
+      this.damageNumbers.push({ x, y, text, color, alpha: 1 });
+    },
+
+    drawDamageNumbers() {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (const d of this.damageNumbers) {
+        ctx.font = '800 24px Orbitron';
+        ctx.fillStyle = d.color.replace(')', `,${d.alpha})`).replace('rgb', 'rgba');
+        // Handle hex colors
+        if (d.color.startsWith('#')) {
+          const r = parseInt(d.color.slice(1, 3), 16);
+          const g = parseInt(d.color.slice(3, 5), 16);
+          const b = parseInt(d.color.slice(5, 7), 16);
+          ctx.fillStyle = `rgba(${r},${g},${b},${d.alpha})`;
+        }
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 10;
+        ctx.fillText(d.text, d.x, d.y);
+      }
+      ctx.restore();
+    },
+
+    getEnemyPose() {
+      switch (this.enemyState) {
+        case 'guard': return 'guard';
+        case 'telegraph': return 'telegraph_' + this.currentAttackType;
+        case 'attack':
+          if (this.currentAttackType === 'thrust') return 'attack_thrust';
+          return 'attack_' + this.currentAttackType;
+        case 'recovery': return 'recovery';
+        default: return 'guard';
+      }
+    },
+
+    getPlayerPose() {
+      if (this.playerStagger > 0) return 'hit_stagger';
+      return GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
+    }
+  };
+```
+
+- [ ] **Step 3: Update combat screen to use CombatEngine**
+
+Replace `updateCombat` and `renderCombat`:
+
+```javascript
+  let combatResult = 'fighting';
+
+  function startCombat(stageIndex) {
+    combatTime = 0;
+    CombatEngine.init(stageIndex);
+    combatResult = 'fighting';
+  }
+
+  function updateCombat(dt) {
+    combatTime += dt;
+    HUD.update(dt);
+    combatResult = CombatEngine.update(dt);
+
+    if (combatResult === 'player_dead') {
+      setState(GameState.GAME_OVER);
+    } else if (combatResult === 'enemy_dead') {
+      if (CombatEngine.stageIndex >= 2) {
+        setState(GameState.VICTORY);
+      } else {
+        setState(GameState.LEVEL_CLEAR);
+      }
+    }
+  }
+
+  function renderCombat() {
+    PlayerRenderer.draw(CombatEngine.getPlayerPose(), combatTime);
+    EnemyRenderer.draw(CombatEngine.getEnemyPose(), combatTime);
+    HUD.draw(combatTime);
+    CombatEngine.drawDamageNumbers();
+  }
+```
+
+- [ ] **Step 4: Update onStateEnter to start combat**
+
+```javascript
+  function onStateEnter(state) {
+    if (state === GameState.WEBCAM_SETUP) {
+      webcamSetupTime = 0;
+      enterWebcamSetup();
+    } else if (state === GameState.LEVEL_INTRO) {
+      // Will be implemented in Task 7, for now skip to combat
+      setState(GameState.COMBAT);
+    } else if (state === GameState.COMBAT) {
+      startCombat(currentStageIndex);
+    }
+  }
+```
+
+Add `currentStageIndex` variable near the top constants:
+
+```javascript
+  let currentStageIndex = 0;
+```
+
+- [ ] **Step 5: Verify in browser**
+
+Expected:
+- Enemy cycles through guard → telegraph (with direction arrow) → attack → recovery
+- During telegraph, the correct gesture blocks the attack (block_left for left attack, block_right for right, dodge for thrust)
+- Successful block: combo increases, score increases, green damage number floats up
+- Failed block: player takes damage, HP bar flashes, red damage number, player staggers
+- Attack gesture during recovery: enemy takes 15 damage, orange damage number
+- Player HP or enemy HP reaching 0 transitions state (to placeholder for now)
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: combat engine with enemy AI, damage, combos, 3 stages"
+```
+
+---
+
+### Task 7: Game Flow Screens (Intro, Level Clear, Game Over, Victory)
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** All remaining screen states — level intro with countdown, level clear with score breakdown, game over with retry, and victory screen. After this task, the complete game loop works end to end.
+
+- [ ] **Step 1: Add Level Intro screen**
+
+Add after the webcam setup screen section:
+
+```javascript
+  // === LEVEL INTRO SCREEN ===
+  let introTime = 0;
+  let introStage = 0;
+
+  function updateLevelIntro(dt) {
+    introTime += dt;
+    if (introTime >= 4.0) {
+      setState(GameState.COMBAT);
+    }
+  }
+
+  function renderLevelIntro() {
+    const stageLabels = ['I', 'II', 'III'];
+    const enemyNames = ['SHADOW', 'WRAITH', 'DEMON LORD'];
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Stage label
+    if (introTime < 1.5) {
+      const scale = Math.min(1, introTime * 2);
+      ctx.globalAlpha = scale;
+      ctx.font = '700 20px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('STAGE', CANVAS_W / 2, CANVAS_H / 2 - 60);
+      ctx.font = '900 72px Orbitron';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(255,204,0,0.8)';
+      ctx.shadowBlur = 30;
+      ctx.fillText(stageLabels[currentStageIndex], CANVAS_W / 2, CANVAS_H / 2);
+      ctx.shadowBlur = 0;
+      ctx.font = '800 24px Orbitron';
+      ctx.fillStyle = '#ff5555';
+      ctx.fillText('VS  ' + enemyNames[currentStageIndex], CANVAS_W / 2, CANVAS_H / 2 + 50);
+    }
+
+    // Countdown
+    if (introTime >= 1.5 && introTime < 4.0) {
+      const countNum = 3 - Math.floor(introTime - 1.5);
+      if (countNum > 0) {
+        const pulse = 1 + 0.3 * Math.sin((introTime - 1.5) * 10);
+        ctx.scale(pulse, pulse);
+        ctx.font = '900 80px Orbitron';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = 'rgba(255,255,255,0.6)';
+        ctx.shadowBlur = 20;
+        ctx.fillText(countNum.toString(), CANVAS_W / 2 / pulse, CANVAS_H / 2 / pulse);
+      } else {
+        ctx.font = '900 64px Orbitron';
+        ctx.fillStyle = '#ff4444';
+        ctx.shadowColor = 'rgba(255,50,50,0.8)';
+        ctx.shadowBlur = 30;
+        ctx.fillText('FIGHT!', CANVAS_W / 2, CANVAS_H / 2);
+      }
+    }
+
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 2: Add Level Clear screen**
+
+```javascript
+  // === LEVEL CLEAR SCREEN ===
+  let clearTime = 0;
+
+  function updateLevelClear(dt) {
+    clearTime += dt;
+  }
+
+  function renderLevelClear() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fadeIn = Math.min(1, clearTime * 2);
+    ctx.globalAlpha = fadeIn;
+
+    ctx.font = '900 48px Orbitron';
+    ctx.fillStyle = '#00ffcc';
+    ctx.shadowColor = 'rgba(0,255,200,0.6)';
+    ctx.shadowBlur = 25;
+    ctx.fillText('STAGE CLEAR!', CANVAS_W / 2, 150);
+    ctx.shadowBlur = 0;
+
+    // Score breakdown
+    ctx.font = '700 22px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('SCORE', CANVAS_W / 2, 250);
+    ctx.font = '800 40px Orbitron';
+    ctx.fillStyle = '#ffee55';
+    ctx.fillText(HUD.score.toLocaleString(), CANVAS_W / 2, 290);
+
+    ctx.font = '700 20px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`HP REMAINING: ${Math.ceil(HUD.playerHP)}/${HUD.playerMaxHP}`, CANVAS_W / 2, 350);
+
+    // Next stage button
+    if (clearTime > 1.5) {
+      const alpha = 0.5 + 0.5 * Math.sin(clearTime * 3);
+      ctx.font = '800 24px Orbitron';
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillText('CLICK FOR NEXT STAGE', CANVAS_W / 2, 460);
+    }
+
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 3: Add Game Over screen**
+
+```javascript
+  // === GAME OVER SCREEN ===
+  let gameOverTime = 0;
+
+  function updateGameOver(dt) {
+    gameOverTime += dt;
+  }
+
+  function renderGameOver() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fadeIn = Math.min(1, gameOverTime * 1.5);
+    ctx.globalAlpha = fadeIn;
+
+    // Red vignette
+    const vigGrad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H / 2, 100, CANVAS_W / 2, CANVAS_H / 2, CANVAS_W);
+    vigGrad.addColorStop(0, 'transparent');
+    vigGrad.addColorStop(1, 'rgba(150,0,0,0.3)');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    ctx.font = '900 56px Orbitron';
+    ctx.fillStyle = '#ff2222';
+    ctx.shadowColor = 'rgba(255,0,0,0.7)';
+    ctx.shadowBlur = 30;
+    ctx.fillText('GAME OVER', CANVAS_W / 2, CANVAS_H / 2 - 60);
+    ctx.shadowBlur = 0;
+
+    ctx.font = '700 22px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('FINAL SCORE', CANVAS_W / 2, CANVAS_H / 2 + 10);
+    ctx.font = '800 36px Orbitron';
+    ctx.fillStyle = '#ffee55';
+    ctx.fillText(HUD.score.toLocaleString(), CANVAS_W / 2, CANVAS_H / 2 + 50);
+
+    if (gameOverTime > 2) {
+      const alpha = 0.5 + 0.5 * Math.sin(gameOverTime * 3);
+      ctx.font = '800 22px Orbitron';
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillText('CLICK TO RETRY', CANVAS_W / 2, CANVAS_H / 2 + 130);
+    }
+
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 4: Add Victory screen**
+
+```javascript
+  // === VICTORY SCREEN ===
+  let victoryTime = 0;
+
+  function updateVictory(dt) {
+    victoryTime += dt;
+  }
+
+  function renderVictory() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fadeIn = Math.min(1, victoryTime * 1.5);
+    ctx.globalAlpha = fadeIn;
+
+    // Gold vignette
+    const vigGrad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H / 2, 50, CANVAS_W / 2, CANVAS_H / 2, CANVAS_W);
+    vigGrad.addColorStop(0, 'rgba(255,220,0,0.1)');
+    vigGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    ctx.font = '900 52px Orbitron';
+    ctx.fillStyle = '#ffcc00';
+    ctx.shadowColor = 'rgba(255,204,0,0.8)';
+    ctx.shadowBlur = 30;
+    ctx.fillText('VICTORY!', CANVAS_W / 2, 150);
+    ctx.shadowBlur = 0;
+
+    ctx.font = '700 24px Rajdhani';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('ALL STAGES COMPLETE', CANVAS_W / 2, 220);
+
+    ctx.font = '700 20px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('TOTAL SCORE', CANVAS_W / 2, 300);
+    ctx.font = '900 48px Orbitron';
+    ctx.fillStyle = '#ffee55';
+    ctx.shadowColor = 'rgba(255,220,0,0.5)';
+    ctx.shadowBlur = 15;
+    ctx.fillText(HUD.score.toLocaleString(), CANVAS_W / 2, 350);
+    ctx.shadowBlur = 0;
+
+    if (victoryTime > 2) {
+      const alpha = 0.5 + 0.5 * Math.sin(victoryTime * 3);
+      ctx.font = '800 22px Orbitron';
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillText('CLICK TO PLAY AGAIN', CANVAS_W / 2, 480);
+    }
+
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 5: Wire all screens into update/render/input/stateEnter**
+
+Update `update()`:
+
+```javascript
+  function update(dt) {
+    switch (currentState) {
+      case GameState.TITLE: updateTitle(dt); break;
+      case GameState.WEBCAM_SETUP: updateWebcamSetup(dt); break;
+      case GameState.LEVEL_INTRO: updateLevelIntro(dt); break;
+      case GameState.COMBAT: updateCombat(dt); break;
+      case GameState.LEVEL_CLEAR: updateLevelClear(dt); break;
+      case GameState.GAME_OVER: updateGameOver(dt); break;
+      case GameState.VICTORY: updateVictory(dt); break;
+    }
+  }
+```
+
+Update `render()`:
+
+```javascript
+  function render() {
+    ctx.fillStyle = '#060612';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    bgGrad.addColorStop(0, '#060612');
+    bgGrad.addColorStop(0.4, '#12082a');
+    bgGrad.addColorStop(1, '#0a0a20');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    switch (currentState) {
+      case GameState.TITLE: renderTitle(); break;
+      case GameState.WEBCAM_SETUP: renderWebcamSetup(); break;
+      case GameState.LEVEL_INTRO: renderLevelIntro(); break;
+      case GameState.COMBAT: renderCombat(); break;
+      case GameState.LEVEL_CLEAR: renderLevelClear(); break;
+      case GameState.GAME_OVER: renderGameOver(); break;
+      case GameState.VICTORY: renderVictory(); break;
+    }
+  }
+```
+
+Update `onStateEnter`:
+
+```javascript
+  function onStateEnter(state) {
+    if (state === GameState.WEBCAM_SETUP) {
+      webcamSetupTime = 0;
+      enterWebcamSetup();
+    } else if (state === GameState.LEVEL_INTRO) {
+      introTime = 0;
+    } else if (state === GameState.COMBAT) {
+      startCombat(currentStageIndex);
+    } else if (state === GameState.LEVEL_CLEAR) {
+      clearTime = 0;
+    } else if (state === GameState.GAME_OVER) {
+      gameOverTime = 0;
+    } else if (state === GameState.VICTORY) {
+      victoryTime = 0;
+    }
+  }
+```
+
+Update click handler:
+
+```javascript
+  canvas.addEventListener('click', () => {
+    if (currentState === GameState.TITLE) {
+      setState(GameState.WEBCAM_SETUP);
+    } else if (currentState === GameState.WEBCAM_SETUP && webcamSetupStatus === 'ready') {
+      currentStageIndex = 0;
+      setState(GameState.LEVEL_INTRO);
+    } else if (currentState === GameState.LEVEL_CLEAR && clearTime > 1.5) {
+      currentStageIndex++;
+      setState(GameState.LEVEL_INTRO);
+    } else if (currentState === GameState.GAME_OVER && gameOverTime > 2) {
+      currentStageIndex = 0;
+      HUD.playerHP = HUD.playerMaxHP;
+      setState(GameState.TITLE);
+    } else if (currentState === GameState.VICTORY && victoryTime > 2) {
+      currentStageIndex = 0;
+      HUD.playerHP = HUD.playerMaxHP;
+      setState(GameState.TITLE);
+    }
+  });
+```
+
+- [ ] **Step 6: Verify in browser**
+
+Expected full flow:
+- Title → click → Webcam Setup → click → Level Intro (STAGE I, VS SHADOW, 3-2-1-FIGHT!) → Combat
+- Beat enemy → STAGE CLEAR with score → click → STAGE II intro → Combat
+- Die → GAME OVER with red vignette, score, click to retry
+- Beat all 3 → VICTORY with gold glow, total score
+- HP carries over between stages (no regen)
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: all game flow screens (intro, clear, game over, victory)"
+```
+
+---
+
+### Task 8: Visual Effects (Particles, Screen Shake, Impact Effects)
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** Particle system for dust, impact sparks, and glow effects. Screen shake on damage. Polished visual feedback. After this task, the game looks and feels cinematic.
+
+- [ ] **Step 1: Add the Particles module**
+
+Add after the CombatEngine module:
+
+```javascript
+  // === PARTICLES ===
+  const Particles = {
+    particles: [],
+
+    update(dt) {
+      this.particles = this.particles.filter(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        p.alpha = Math.max(0, p.life / p.maxLife);
+        if (p.gravity) p.vy += p.gravity * dt;
+        return p.life > 0;
+      });
+    },
+
+    draw() {
+      ctx.save();
+      for (const p of this.particles) {
+        ctx.globalAlpha = p.alpha * (p.baseAlpha || 1);
+        ctx.fillStyle = p.color;
+        if (p.glow) {
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = p.glow;
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.5 + 0.5 * p.alpha), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    },
+
+    // Ambient floating dust
+    spawnDust() {
+      if (this.particles.length > 150) return;
+      this.particles.push({
+        x: Math.random() * CANVAS_W,
+        y: CANVAS_H + 5,
+        vx: (Math.random() - 0.5) * 20,
+        vy: -Math.random() * 40 - 10,
+        size: Math.random() * 2 + 1,
+        life: Math.random() * 4 + 2,
+        maxLife: 6,
+        alpha: 1,
+        baseAlpha: 0.3,
+        color: ['rgba(100,180,255,1)', 'rgba(200,150,255,1)', 'rgba(255,200,100,1)'][Math.floor(Math.random() * 3)],
+        glow: 4
+      });
+    },
+
+    // Impact sparks on hit/block
+    spawnImpact(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 200 + 100;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 3 + 1,
+          life: Math.random() * 0.4 + 0.2,
+          maxLife: 0.6,
+          alpha: 1,
+          baseAlpha: 1,
+          color,
+          glow: 8,
+          gravity: 300
+        });
+      }
+    },
+
+    // Block sparks (blue/white)
+    spawnBlock(x, y) {
+      this.spawnImpact(x, y, '#88ddff', 15);
+      this.spawnImpact(x, y, '#ffffff', 5);
+    },
+
+    // Hit sparks (red/orange)
+    spawnHit(x, y) {
+      this.spawnImpact(x, y, '#ff4444', 15);
+      this.spawnImpact(x, y, '#ff8800', 8);
+    },
+
+    // Player attack sparks (yellow)
+    spawnPlayerAttack(x, y) {
+      this.spawnImpact(x, y, '#ffdd44', 12);
+      this.spawnImpact(x, y, '#ffffff', 4);
+    }
+  };
+```
+
+- [ ] **Step 2: Add screen shake**
+
+Add after Particles:
+
+```javascript
+  // === SCREEN SHAKE ===
+  const ScreenShake = {
+    intensity: 0,
+    duration: 0,
+    time: 0,
+    offsetX: 0,
+    offsetY: 0,
+
+    trigger(intensity, duration) {
+      this.intensity = intensity;
+      this.duration = duration;
+      this.time = 0;
+    },
+
+    update(dt) {
+      if (this.time < this.duration) {
+        this.time += dt;
+        const progress = this.time / this.duration;
+        const fade = 1 - progress;
+        this.offsetX = (Math.random() - 0.5) * this.intensity * fade * 2;
+        this.offsetY = (Math.random() - 0.5) * this.intensity * fade * 2;
+      } else {
+        this.offsetX = 0;
+        this.offsetY = 0;
+      }
+    },
+
+    apply() {
+      ctx.translate(this.offsetX, this.offsetY);
+    }
+  };
+```
+
+- [ ] **Step 3: Integrate particles and shake into combat**
+
+Update `CombatEngine.resolveAttack()` — add particle spawns after the blocked/hit logic:
+
+In the `if (blocked)` block, after `this.addDamageNumber(...)`:
+
+```javascript
+        Particles.spawnBlock(CANVAS_W / 2, CANVAS_H / 2);
+```
+
+In the `else` block (player hit), after `this.addDamageNumber(...)`:
+
+```javascript
+        Particles.spawnHit(PlayerRenderer.x + 30, PlayerRenderer.y - 40);
+        ScreenShake.trigger(8, 0.3);
+```
+
+In `CombatEngine.dealDamageToEnemy()`, after `this.addDamageNumber(...)` (the first one):
+
+```javascript
+      Particles.spawnPlayerAttack(EnemyRenderer.x - 30, EnemyRenderer.y - 40);
+      ScreenShake.trigger(5, 0.2);
+```
+
+Update `updateCombat`:
+
+```javascript
+  function updateCombat(dt) {
+    combatTime += dt;
+    HUD.update(dt);
+    Particles.update(dt);
+    ScreenShake.update(dt);
+    combatResult = CombatEngine.update(dt);
+
+    // Spawn ambient dust
+    if (Math.random() < dt * 2) Particles.spawnDust();
+
+    if (combatResult === 'player_dead') {
+      setState(GameState.GAME_OVER);
+    } else if (combatResult === 'enemy_dead') {
+      if (CombatEngine.stageIndex >= 2) {
+        setState(GameState.VICTORY);
+      } else {
+        setState(GameState.LEVEL_CLEAR);
+      }
+    }
+  }
+```
+
+Update `renderCombat`:
+
+```javascript
+  function renderCombat() {
+    ctx.save();
+    ScreenShake.apply();
+
+    Particles.draw();
+    PlayerRenderer.draw(CombatEngine.getPlayerPose(), combatTime);
+    EnemyRenderer.draw(CombatEngine.getEnemyPose(), combatTime);
+    HUD.draw(combatTime);
+    CombatEngine.drawDamageNumbers();
+
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 4: Verify in browser**
+
+Expected:
+- Floating dust particles drift upward in the arena background
+- Blocking an attack: blue/white sparks burst at center
+- Getting hit: red/orange sparks burst at player, screen shakes
+- Attacking enemy: yellow sparks burst at enemy, slight screen shake
+- Damage numbers float up and fade alongside the spark effects
+- All effects look cinematic and polished
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: particle system, screen shake, impact effects"
+```
+
+---
+
+### Task 9: Audio System
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** Web Audio API-based sound system with procedurally generated background music and sound effects. All audio is synthesized — no external files needed. After this task, the game has full audio.
+
+- [ ] **Step 1: Add the AudioManager module**
+
+Add after ScreenShake:
+
+```javascript
+  // === AUDIO MANAGER ===
+  const AudioManager = {
+    ctx: null,
+    musicGain: null,
+    sfxGain: null,
+    musicInterval: null,
+    muted: false,
+
+    init() {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.3;
+      this.musicGain.connect(this.ctx.destination);
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = 0.5;
+      this.sfxGain.connect(this.ctx.destination);
+    },
+
+    resume() {
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    },
+
+    playTone(freq, duration, type, gainNode, volume) {
+      if (!this.ctx || this.muted) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(volume || 0.3, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(gainNode || this.sfxGain);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    },
+
+    playNoise(duration, gainNode, volume) {
+      if (!this.ctx || this.muted) return;
+      const bufferSize = this.ctx.sampleRate * duration;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.5;
+      }
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(volume || 0.2, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      source.connect(gain);
+      gain.connect(gainNode || this.sfxGain);
+      source.start();
+    },
+
+    // Sound effects
+    sfxBlock() {
+      this.playTone(800, 0.1, 'square', this.sfxGain, 0.15);
+      this.playTone(1200, 0.08, 'square', this.sfxGain, 0.1);
+      this.playNoise(0.05, this.sfxGain, 0.15);
+    },
+
+    sfxHit() {
+      this.playTone(150, 0.3, 'sine', this.sfxGain, 0.3);
+      this.playTone(80, 0.2, 'triangle', this.sfxGain, 0.2);
+      this.playNoise(0.1, this.sfxGain, 0.25);
+    },
+
+    sfxAttack() {
+      this.playNoise(0.15, this.sfxGain, 0.2);
+      this.playTone(400, 0.1, 'sawtooth', this.sfxGain, 0.1);
+    },
+
+    sfxCombo() {
+      this.playTone(523, 0.15, 'sine', this.sfxGain, 0.2);
+      setTimeout(() => this.playTone(659, 0.15, 'sine', this.sfxGain, 0.2), 80);
+      setTimeout(() => this.playTone(784, 0.2, 'sine', this.sfxGain, 0.2), 160);
+    },
+
+    sfxLevelClear() {
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((n, i) => {
+        setTimeout(() => this.playTone(n, 0.3, 'sine', this.sfxGain, 0.25), i * 150);
+      });
+    },
+
+    sfxGameOver() {
+      this.playTone(200, 1.0, 'sine', this.sfxGain, 0.3);
+      this.playTone(150, 1.2, 'triangle', this.sfxGain, 0.2);
+    },
+
+    sfxVictory() {
+      const notes = [523, 659, 784, 659, 784, 1047];
+      notes.forEach((n, i) => {
+        setTimeout(() => this.playTone(n, 0.25, 'sine', this.sfxGain, 0.25), i * 120);
+      });
+    },
+
+    // Background music - looping beat
+    startMusic(bpm) {
+      this.stopMusic();
+      const interval = 60000 / bpm / 2; // 8th notes
+      let beat = 0;
+      const bassNotes = [110, 110, 130.81, 110, 146.83, 146.83, 130.81, 110];
+      this.musicInterval = setInterval(() => {
+        if (this.muted) return;
+        const note = bassNotes[beat % bassNotes.length];
+        this.playTone(note, 0.15, 'triangle', this.musicGain, 0.2);
+        // Kick on beats 0, 4
+        if (beat % 4 === 0) {
+          this.playTone(55, 0.1, 'sine', this.musicGain, 0.3);
+          this.playNoise(0.03, this.musicGain, 0.1);
+        }
+        // Hi-hat on every other beat
+        if (beat % 2 === 1) {
+          this.playNoise(0.03, this.musicGain, 0.05);
+        }
+        beat++;
+      }, interval);
+    },
+
+    stopMusic() {
+      if (this.musicInterval) {
+        clearInterval(this.musicInterval);
+        this.musicInterval = null;
+      }
+    },
+
+    toggle() {
+      this.muted = !this.muted;
+      if (this.muted) this.stopMusic();
+    }
+  };
+```
+
+- [ ] **Step 2: Integrate audio into game events**
+
+Update `CombatEngine.resolveAttack()` — add audio calls:
+
+In the `if (blocked)` block, add:
+
+```javascript
+        AudioManager.sfxBlock();
+        if (HUD.combo > 0 && HUD.combo % 5 === 0) AudioManager.sfxCombo();
+```
+
+In the `else` block (player hit), add:
+
+```javascript
+        AudioManager.sfxHit();
+```
+
+In `CombatEngine.dealDamageToEnemy()`, add:
+
+```javascript
+      AudioManager.sfxAttack();
+```
+
+Update `onStateEnter` to add audio triggers:
+
+```javascript
+  function onStateEnter(state) {
+    if (state === GameState.WEBCAM_SETUP) {
+      webcamSetupTime = 0;
+      AudioManager.init();
+      enterWebcamSetup();
+    } else if (state === GameState.LEVEL_INTRO) {
+      introTime = 0;
+    } else if (state === GameState.COMBAT) {
+      startCombat(currentStageIndex);
+      const bpms = [100, 120, 140];
+      AudioManager.resume();
+      AudioManager.startMusic(bpms[currentStageIndex]);
+    } else if (state === GameState.LEVEL_CLEAR) {
+      clearTime = 0;
+      AudioManager.stopMusic();
+      AudioManager.sfxLevelClear();
+    } else if (state === GameState.GAME_OVER) {
+      gameOverTime = 0;
+      AudioManager.stopMusic();
+      AudioManager.sfxGameOver();
+    } else if (state === GameState.VICTORY) {
+      victoryTime = 0;
+      AudioManager.stopMusic();
+      AudioManager.sfxVictory();
+    }
+  }
+```
+
+Add mute toggle to click handler (right-click or 'M' key):
+
+```javascript
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'm' || e.key === 'M') {
+      AudioManager.toggle();
+    }
+  });
+```
+
+- [ ] **Step 3: Verify in browser**
+
+Expected:
+- Combat starts with a looping bass beat (tempo 100 BPM for stage 1)
+- Blocking: metallic clang sound
+- Getting hit: low thud
+- Attacking enemy: whoosh noise
+- Every 5th combo: rising chime
+- Level clear: ascending fanfare
+- Game over: low drone
+- Press M to mute/unmute
+- Music tempo increases per stage (100 → 120 → 140 BPM)
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: Web Audio API sound system with music and SFX"
+```
+
+---
+
+### Task 10: Title Screen Polish + Final Integration
+
+**Files:**
+- Modify: `index.html`
+
+**What this builds:** Polished title screen with animated background particles, and final integration fixes — ensuring HP carries between stages, the complete flow works end to end, and a mute indicator is visible.
+
+- [ ] **Step 1: Enhance the title screen**
+
+Replace `renderTitle`:
+
+```javascript
+  let titleParticles = [];
+
+  function updateTitle(dt) {
+    titleTime += dt;
+    // Spawn title particles
+    if (Math.random() < dt * 3 && titleParticles.length < 80) {
+      titleParticles.push({
+        x: Math.random() * CANVAS_W,
+        y: CANVAS_H + 5,
+        vx: (Math.random() - 0.5) * 15,
+        vy: -Math.random() * 30 - 15,
+        size: Math.random() * 2.5 + 0.5,
+        life: Math.random() * 5 + 3,
+        maxLife: 8,
+        color: ['#4488ff', '#ff4444', '#ffcc00', '#aa66ff'][Math.floor(Math.random() * 4)]
+      });
+    }
+    titleParticles = titleParticles.filter(p => {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      return p.life > 0;
+    });
+  }
+
+  function renderTitle() {
+    // Draw particles
+    for (const p of titleParticles) {
+      const alpha = Math.max(0, p.life / p.maxLife) * 0.5;
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Title glow background
+    const glowGrad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H / 2 - 40, 0, CANVAS_W / 2, CANVAS_H / 2 - 40, 250);
+    glowGrad.addColorStop(0, 'rgba(255,204,0,0.08)');
+    glowGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Title text
+    const glow = 0.5 + 0.5 * Math.sin(titleTime * 2);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 68px Orbitron';
+    ctx.shadowColor = `rgba(255, 204, 0, ${glow * 0.8})`;
+    ctx.shadowBlur = 40;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('STRAW BLADE', CANVAS_W / 2, CANVAS_H / 2 - 40);
+    ctx.restore();
+
+    // Subtitle
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '600 18px Rajdhani';
+    ctx.fillStyle = 'rgba(200,200,200,0.6)';
+    ctx.fillText('GESTURE COMBAT', CANVAS_W / 2, CANVAS_H / 2 + 10);
+    ctx.restore();
+
+    // Start prompt
+    const alpha = 0.5 + 0.5 * Math.sin(titleTime * 3);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '800 22px Orbitron';
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.fillText('CLICK TO START', CANVAS_W / 2, CANVAS_H / 2 + 80);
+    ctx.restore();
+
+    // Mute indicator
+    ctx.save();
+    ctx.textAlign = 'right';
+    ctx.font = '600 14px Rajdhani';
+    ctx.fillStyle = '#555';
+    ctx.fillText('Press M to toggle sound', CANVAS_W - 20, CANVAS_H - 20);
+    ctx.restore();
+  }
+```
+
+- [ ] **Step 2: Ensure HP persists between stages**
+
+In the `startCombat` function, only reset enemy HP, not player HP (unless it's stage 0):
+
+```javascript
+  function startCombat(stageIndex) {
+    combatTime = 0;
+    CombatEngine.init(stageIndex);
+    combatResult = 'fighting';
+  }
+```
+
+Update `CombatEngine.init` — preserve player HP:
+
+```javascript
+    init(stageIndex) {
+      this.stageIndex = stageIndex;
+      this.stage = STAGES[stageIndex];
+      this.enemyState = 'guard';
+      this.enemyStateTime = 0;
+      this.patternIndex = 0;
+      this.guardTimer = 0;
+      this.currentAttackType = null;
+      this.attackResolved = false;
+      this.playerStagger = 0;
+      this.attackCooldown = 0;
+      this.damageNumbers = [];
+
+      // Only reset player HP on first stage
+      if (stageIndex === 0) {
+        HUD.playerHP = HUD.playerMaxHP;
+        HUD.score = 0;
+      }
+      HUD.enemyHP = HUD.enemyMaxHP;
+      HUD.combo = 0;
+      HUD.stage = stageIndex + 1;
+    },
+```
+
+- [ ] **Step 3: Add mute indicator to combat HUD**
+
+Add at the end of `HUD.drawBottomBar`:
+
+```javascript
+      // Mute indicator
+      if (AudioManager.muted) {
+        ctx.font = '700 14px Rajdhani';
+        ctx.fillStyle = '#ff4444';
+        ctx.textAlign = 'center';
+        ctx.fillText('🔇 MUTED (M)', CANVAS_W / 2, CANVAS_H - 10);
+      }
+```
+
+- [ ] **Step 4: Verify complete game flow in browser**
+
+Test the entire flow:
+1. Title screen with particles and "STRAW BLADE" title → click
+2. Webcam setup → allow camera → see gesture → click
+3. Stage I intro (3-2-1-FIGHT) → combat with SHADOW at 100 BPM
+4. Beat SHADOW → Stage Clear → click → Stage II intro → combat with WRAITH at 120 BPM
+5. HP carries over from Stage I
+6. Beat WRAITH → Stage III → DEMON LORD at 140 BPM
+7. Beat all → VICTORY screen
+8. Die at any point → GAME OVER → click → back to title
+9. Press M → mute indicator appears, all audio silenced
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: polished title screen, HP persistence, mute toggle, final integration"
+```
+
+---
+
+## Summary
+
+| Task | What it builds |
+|------|---------------|
+| 1 | HTML scaffold, canvas, game loop, state machine, title screen |
+| 2 | Webcam + Teachable Machine model integration |
+| 3 | Player character (6 poses, straw blade, blue theme) |
+| 4 | Enemy character (8 poses, horned demon, red theme) |
+| 5 | HUD (HP bars, score, stage, gesture display, combo) |
+| 6 | Combat engine, enemy AI, 3-stage attack patterns, damage |
+| 7 | Game flow screens (intro countdown, clear, game over, victory) |
+| 8 | Particle effects, screen shake, impact sparks |
+| 9 | Web Audio API music + sound effects |
+| 10 | Title polish, HP persistence, final integration |

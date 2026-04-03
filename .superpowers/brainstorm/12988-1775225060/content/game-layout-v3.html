@@ -1,0 +1,159 @@
+<h2>Rhythm Combat -- AAA Visual v3</h2>
+<p class="subtitle">Better readability + character silhouettes</p>
+
+<div class="mockup">
+  <div class="mockup-header">Game Screen -- Revised</div>
+  <div class="mockup-body" style="background: linear-gradient(180deg, #0a0a1a 0%, #1a0a2e 40%, #0d0d2b 100%); color: #eee; padding: 0; height: 580px; position: relative; overflow: hidden; font-family: 'Segoe UI', Arial, sans-serif;">
+
+    <!-- Atmospheric background -->
+    <div style="position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 90%, rgba(100, 50, 255, 0.1) 0%, transparent 60%); pointer-events: none;"></div>
+
+    <!-- Particles -->
+    <div style="position: absolute; top: 100px; left: 18%; width: 3px; height: 3px; background: rgba(100,180,255,0.6); border-radius: 50%; box-shadow: 0 0 6px rgba(100,180,255,0.4);"></div>
+    <div style="position: absolute; top: 180px; right: 22%; width: 3px; height: 3px; background: rgba(255,100,100,0.6); border-radius: 50%; box-shadow: 0 0 6px rgba(255,100,100,0.4);"></div>
+
+    <!-- Top HUD -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 80%, transparent 100%); position: relative; z-index: 2;">
+      <!-- Player HP -->
+      <div style="flex: 1;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+          <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #1a3a6e, #2255cc); border-radius: 50%; border: 2px solid #4488ff; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 0 12px rgba(68,136,255,0.4);">⚡</div>
+          <div style="font-size: 14px; font-weight: 700; letter-spacing: 2px; color: #fff; text-transform: uppercase;">WARRIOR</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.7); border-radius: 3px; height: 12px; width: 220px; overflow: hidden; border: 1px solid rgba(68,136,255,0.4);">
+          <div style="background: linear-gradient(90deg, #0066ff, #00ccff); height: 100%; width: 75%; box-shadow: 0 0 10px rgba(0,204,255,0.5), inset 0 1px 0 rgba(255,255,255,0.2);"></div>
+        </div>
+        <div style="font-size: 11px; color: #99ccff; margin-top: 4px; font-weight: 600;">75 / 100</div>
+      </div>
+
+      <!-- Center -->
+      <div style="text-align: center; flex: 0.4;">
+        <div style="font-size: 10px; letter-spacing: 4px; color: #999; text-transform: uppercase;">Stage</div>
+        <div style="font-size: 24px; font-weight: 800; color: #fff; text-shadow: 0 0 15px rgba(255,204,0,0.5); letter-spacing: 3px;">I</div>
+        <div style="font-size: 12px; color: #ffdd55; letter-spacing: 1px; font-weight: 600;">12,400</div>
+      </div>
+
+      <!-- Enemy HP -->
+      <div style="flex: 1; text-align: right;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; justify-content: flex-end;">
+          <div style="font-size: 14px; font-weight: 700; letter-spacing: 2px; color: #fff; text-transform: uppercase;">SHADOW</div>
+          <div style="width: 36px; height: 36px; background: linear-gradient(135deg, #6e1a1a, #cc2222); border-radius: 50%; border: 2px solid #ff4444; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 0 12px rgba(255,68,68,0.4);">💀</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.7); border-radius: 3px; height: 12px; width: 220px; overflow: hidden; margin-left: auto; border: 1px solid rgba(255,68,68,0.4);">
+          <div style="background: linear-gradient(90deg, #ff0033, #ff3366); height: 100%; width: 60%; box-shadow: 0 0 10px rgba(255,0,51,0.5), inset 0 1px 0 rgba(255,255,255,0.2);"></div>
+        </div>
+        <div style="font-size: 11px; color: #ff9999; margin-top: 4px; font-weight: 600; text-align: right;">60 / 100</div>
+      </div>
+    </div>
+
+    <!-- Arena -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 40px; height: 380px; position: relative; z-index: 2;">
+
+      <!-- Player Character - humanoid silhouette blocking -->
+      <div style="text-align: center; position: relative;">
+        <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 110px; height: 20px; background: radial-gradient(ellipse, rgba(0,150,255,0.5) 0%, transparent 70%); filter: blur(6px);"></div>
+        <svg width="140" height="220" viewBox="0 0 140 220" style="filter: drop-shadow(0 0 15px rgba(0,100,255,0.4));">
+          <!-- Head -->
+          <circle cx="70" cy="28" r="18" fill="#1a3a6e" stroke="#4488ff" stroke-width="1.5"/>
+          <!-- Eye visor -->
+          <rect x="56" y="24" width="28" height="6" rx="3" fill="#00ccff" opacity="0.8"/>
+          <!-- Neck -->
+          <rect x="64" y="46" width="12" height="10" fill="#1a3366"/>
+          <!-- Torso -->
+          <path d="M40,56 L100,56 L105,130 L35,130 Z" fill="url(#playerGrad)" stroke="#4488ff" stroke-width="1" opacity="0.9"/>
+          <!-- Left arm - raised with shield -->
+          <path d="M40,60 L15,75 L10,110 L25,115 L35,85" fill="#1a3366" stroke="#4488ff" stroke-width="1"/>
+          <!-- Shield -->
+          <ellipse cx="12" cy="95" rx="16" ry="22" fill="#2255cc" stroke="#66aaff" stroke-width="2" opacity="0.9"/>
+          <line x1="12" y1="75" x2="12" y2="115" stroke="#88ccff" stroke-width="1" opacity="0.5"/>
+          <line x1="0" y1="95" x2="24" y2="95" stroke="#88ccff" stroke-width="1" opacity="0.5"/>
+          <!-- Right arm -->
+          <path d="M100,60 L120,80 L118,120 L105,118 L108,85" fill="#1a3366" stroke="#4488ff" stroke-width="1"/>
+          <!-- Legs -->
+          <path d="M45,130 L40,185 L55,185 L60,140" fill="#0d1a33" stroke="#3366aa" stroke-width="1"/>
+          <path d="M80,130 L85,185 L100,185 L95,140" fill="#0d1a33" stroke="#3366aa" stroke-width="1"/>
+          <!-- Boots -->
+          <path d="M35,182 L58,182 L58,195 L32,195 Z" fill="#1a3366" stroke="#4488ff" stroke-width="1" rx="3"/>
+          <path d="M82,182 L105,182 L108,195 L80,195 Z" fill="#1a3366" stroke="#4488ff" stroke-width="1" rx="3"/>
+          <!-- Shoulder pads -->
+          <ellipse cx="38" cy="58" rx="12" ry="8" fill="#2255cc" stroke="#4488ff" stroke-width="1"/>
+          <ellipse cx="102" cy="58" rx="12" ry="8" fill="#2255cc" stroke="#4488ff" stroke-width="1"/>
+          <!-- Gradient def -->
+          <defs>
+            <linearGradient id="playerGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#2255cc"/>
+              <stop offset="100%" stop-color="#0d1a33"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style="margin-top: 8px; font-size: 12px; color: #00eeff; background: rgba(0,150,255,0.2); padding: 5px 16px; border-radius: 3px; letter-spacing: 2px; text-transform: uppercase; border: 1px solid rgba(0,200,255,0.3); font-weight: 700;">BLOCKING</div>
+      </div>
+
+      <!-- Center - Impact -->
+      <div style="text-align: center; margin-bottom: 80px; position: relative;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100px; height: 100px; background: radial-gradient(circle, rgba(255,204,0,0.2) 0%, transparent 70%); pointer-events: none;"></div>
+        <div style="font-size: 18px; color: #fff; font-weight: 900; letter-spacing: 4px; text-shadow: 0 0 20px rgba(255,204,0,0.8), 0 2px 4px rgba(0,0,0,0.8); text-transform: uppercase;">BLOCKED!</div>
+        <div style="margin-top: 14px; font-size: 32px; font-weight: 900; color: #ff8800; text-shadow: 0 0 20px rgba(255,100,0,0.6), 0 2px 4px rgba(0,0,0,0.6); letter-spacing: 2px;">x3</div>
+        <div style="font-size: 11px; color: #cc8833; letter-spacing: 3px; text-transform: uppercase; font-weight: 600;">COMBO</div>
+      </div>
+
+      <!-- Enemy Character - humanoid silhouette attacking -->
+      <div style="text-align: center; position: relative;">
+        <div style="position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%); width: 110px; height: 20px; background: radial-gradient(ellipse, rgba(255,50,50,0.5) 0%, transparent 70%); filter: blur(6px);"></div>
+        <svg width="150" height="220" viewBox="0 0 150 220" style="filter: drop-shadow(0 0 15px rgba(255,50,50,0.4));">
+          <!-- Head - horned -->
+          <circle cx="75" cy="30" r="18" fill="#4d1a1a" stroke="#ff4444" stroke-width="1.5"/>
+          <!-- Horns -->
+          <path d="M60,18 L50,2 L58,16" fill="#661111" stroke="#ff4444" stroke-width="1"/>
+          <path d="M90,18 L100,2 L92,16" fill="#661111" stroke="#ff4444" stroke-width="1"/>
+          <!-- Eyes -->
+          <circle cx="68" cy="28" r="3" fill="#ff0000" opacity="0.9"/>
+          <circle cx="82" cy="28" r="3" fill="#ff0000" opacity="0.9"/>
+          <!-- Neck -->
+          <rect x="69" y="48" width="12" height="10" fill="#3d1111"/>
+          <!-- Torso -->
+          <path d="M45,58 L105,58 L110,135 L40,135 Z" fill="url(#enemyGrad)" stroke="#ff4444" stroke-width="1" opacity="0.9"/>
+          <!-- Left arm - swinging -->
+          <path d="M45,62 L20,55 L5,80 L18,85 L30,68" fill="#3d1111" stroke="#ff4444" stroke-width="1"/>
+          <!-- Right arm - extended with sword -->
+          <path d="M105,62 L130,50 L140,65 L125,72 L112,62" fill="#3d1111" stroke="#ff4444" stroke-width="1"/>
+          <!-- Sword -->
+          <line x1="138" y1="58" x2="148" y2="30" stroke="#ff6666" stroke-width="3" stroke-linecap="round"/>
+          <line x1="148" y1="30" x2="150" y2="22" stroke="#ffaaaa" stroke-width="2" stroke-linecap="round"/>
+          <!-- Sword glow -->
+          <line x1="138" y1="58" x2="150" y2="22" stroke="#ff0000" stroke-width="6" opacity="0.15" stroke-linecap="round"/>
+          <!-- Legs - lunge stance -->
+          <path d="M50,135 L35,190 L50,190 L60,145" fill="#2a0a0a" stroke="#aa3333" stroke-width="1"/>
+          <path d="M85,135 L100,190 L115,190 L95,145" fill="#2a0a0a" stroke="#aa3333" stroke-width="1"/>
+          <!-- Boots -->
+          <path d="M30,187 L53,187 L53,200 L27,200 Z" fill="#4d1a1a" stroke="#ff4444" stroke-width="1" rx="3"/>
+          <path d="M97,187 L120,187 L123,200 L95,200 Z" fill="#4d1a1a" stroke="#ff4444" stroke-width="1" rx="3"/>
+          <!-- Shoulder spikes -->
+          <polygon points="43,55 30,45 48,60" fill="#661111" stroke="#ff4444" stroke-width="1"/>
+          <polygon points="107,55 120,45 102,60" fill="#661111" stroke="#ff4444" stroke-width="1"/>
+          <defs>
+            <linearGradient id="enemyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#cc2222"/>
+              <stop offset="100%" stop-color="#1a0a0a"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style="margin-top: 8px; font-size: 12px; color: #ff5555; background: rgba(255,50,50,0.2); padding: 5px 16px; border-radius: 3px; letter-spacing: 2px; text-transform: uppercase; border: 1px solid rgba(255,50,50,0.3); font-weight: 700;">STRIKING</div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 70%, transparent 100%); padding: 14px 24px; display: flex; align-items: center; gap: 16px; z-index: 2;">
+      <div style="width: 84px; height: 64px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 0 10px rgba(0,0,0,0.5);">📷</div>
+      <div>
+        <div style="font-size: 10px; color: #888; letter-spacing: 2px; text-transform: uppercase; font-weight: 600;">Gesture</div>
+        <div style="font-size: 15px; color: #00ffcc; font-weight: 700; letter-spacing: 1px; text-shadow: 0 0 8px rgba(0,255,200,0.4); margin-top: 2px;">BLOCK LEFT <span style="color: #888; font-weight: 500; font-size: 12px;">94%</span></div>
+      </div>
+      <div style="margin-left: auto; text-align: right;">
+        <div style="font-size: 10px; color: #888; letter-spacing: 2px; font-weight: 600;">REACTION</div>
+        <div style="font-size: 15px; color: #ffdd55; font-weight: 700; text-shadow: 0 0 8px rgba(255,204,0,0.4); margin-top: 2px;">0.32s</div>
+      </div>
+    </div>
+
+  </div>
+</div>
