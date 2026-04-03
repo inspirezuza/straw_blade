@@ -430,6 +430,357 @@
     }
   };
 
+  // === ENEMY RENDERER ===
+  const EnemyRenderer = {
+    x: 780,
+    y: 380,
+    currentPose: 'guard',
+    poseTime: 0,
+
+    draw(pose, time) {
+      this.currentPose = pose;
+      this.poseTime = time;
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      const floorGrad = ctx.createRadialGradient(0, 110, 0, 0, 110, 60);
+      floorGrad.addColorStop(0, 'rgba(255,50,50,0.4)');
+      floorGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = floorGrad;
+      ctx.fillRect(-60, 90, 120, 40);
+
+      const auraPulse = 0.6 + 0.4 * Math.sin(time * 3);
+      ctx.shadowColor = `rgba(255,50,50,${auraPulse * 0.5})`;
+      ctx.shadowBlur = 20;
+
+      switch (pose) {
+        case 'guard': this.drawGuard(); break;
+        case 'telegraph_left': this.drawTelegraph('left'); break;
+        case 'telegraph_right': this.drawTelegraph('right'); break;
+        case 'telegraph_thrust': this.drawTelegraph('thrust'); break;
+        case 'attack_left': this.drawAttack('left'); break;
+        case 'attack_right': this.drawAttack('right'); break;
+        case 'attack_thrust': this.drawAttackThrust(); break;
+        case 'recovery': this.drawRecovery(); break;
+        default: this.drawGuard(); break;
+      }
+
+      ctx.restore();
+    },
+
+    drawHead(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.arc(offsetX, offsetY - 82, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#4d1a1a';
+      ctx.fill();
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = '#661111';
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 10, offsetY - 94);
+      ctx.lineTo(offsetX - 18, offsetY - 112);
+      ctx.lineTo(offsetX - 6, offsetY - 92);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 10, offsetY - 94);
+      ctx.lineTo(offsetX + 18, offsetY - 112);
+      ctx.lineTo(offsetX + 6, offsetY - 92);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ff2200';
+      ctx.beginPath();
+      ctx.arc(offsetX - 6, offsetY - 84, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(offsetX + 6, offsetY - 84, 3, 0, Math.PI * 2);
+      ctx.fill();
+    },
+
+    drawTorso(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 25, offsetY - 62);
+      ctx.lineTo(offsetX + 25, offsetY - 62);
+      ctx.lineTo(offsetX + 28, offsetY);
+      ctx.lineTo(offsetX - 28, offsetY);
+      ctx.closePath();
+      const tGrad = ctx.createLinearGradient(0, offsetY - 62, 0, offsetY);
+      tGrad.addColorStop(0, '#cc2222');
+      tGrad.addColorStop(1, '#1a0a0a');
+      ctx.fillStyle = tGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#661111';
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 27, offsetY - 58);
+      ctx.lineTo(offsetX - 40, offsetY - 70);
+      ctx.lineTo(offsetX - 22, offsetY - 55);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 27, offsetY - 58);
+      ctx.lineTo(offsetX + 40, offsetY - 70);
+      ctx.lineTo(offsetX + 22, offsetY - 55);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+    },
+
+    drawLegs(offsetX, offsetY, spread) {
+      const s = spread || 0;
+      ctx.strokeStyle = '#bb3333';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#2a0a0a';
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 12, offsetY);
+      ctx.lineTo(offsetX - 18 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 8 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 5, offsetY + 5);
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 12, offsetY);
+      ctx.lineTo(offsetX + 18 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 8 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 5, offsetY + 5);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#4d1a1a';
+      ctx.strokeStyle = '#ff5555';
+      ctx.fillRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.fillRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+    },
+
+    drawSword(startX, startY, endX, endY) {
+      ctx.strokeStyle = '#ff7777';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffaaaa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX + (endX - startX) * 0.15, endY + (endY - startY) * 0.15);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,0,0,0.15)';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+    },
+
+    drawGuard() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-38, -30);
+      ctx.lineTo(-35, 0);
+      ctx.lineTo(-28, -2);
+      ctx.lineTo(-30, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(38, -35);
+      ctx.lineTo(35, -5);
+      ctx.lineTo(28, -7);
+      ctx.lineTo(30, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      this.drawSword(36, -7, 42, -50);
+      this.drawLegs(0, 0);
+    },
+
+    drawTelegraph(direction) {
+      this.drawHead(direction === 'thrust' ? -5 : 0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+
+      if (direction === 'left') {
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-35, -35);
+        ctx.lineTo(-32, -10);
+        ctx.lineTo(-25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(50, -55);
+        ctx.lineTo(55, -30);
+        ctx.lineTo(45, -28);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(53, -30, 65, -60);
+        const flash = Math.sin(this.poseTime * 12) > 0 ? 1 : 0.3;
+        ctx.fillStyle = `rgba(255,255,0,${flash})`;
+        ctx.font = '900 28px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('\u25C4', -80, -30);
+      } else if (direction === 'right') {
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-50, -55);
+        ctx.lineTo(-55, -30);
+        ctx.lineTo(-45, -28);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(-53, -30, -65, -60);
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(35, -35);
+        ctx.lineTo(32, -10);
+        ctx.lineTo(25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        const flash = Math.sin(this.poseTime * 12) > 0 ? 1 : 0.3;
+        ctx.fillStyle = `rgba(255,255,0,${flash})`;
+        ctx.font = '900 28px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('\u25BA', 80, -30);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-35, -35);
+        ctx.lineTo(-32, -10);
+        ctx.lineTo(-25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(45, -60);
+        ctx.lineTo(55, -45);
+        ctx.lineTo(42, -42);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(53, -45, 70, -55);
+        const flash = Math.sin(this.poseTime * 12) > 0 ? 1 : 0.3;
+        ctx.fillStyle = `rgba(255,0,0,${flash})`;
+        ctx.font = '900 22px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText('\u26A0 THRUST', 0, -120);
+      }
+
+      this.drawLegs(0, 0);
+    },
+
+    drawAttack(direction) {
+      this.drawHead(direction === 'left' ? -5 : 5, 0);
+      this.drawTorso(direction === 'left' ? -3 : 3, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+
+      if (direction === 'left') {
+        ctx.beginPath();
+        ctx.moveTo(-25, -58);
+        ctx.lineTo(-35, -35);
+        ctx.lineTo(-32, -10);
+        ctx.lineTo(-25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(20, -55);
+        ctx.lineTo(-10, -45);
+        ctx.lineTo(-30, -25);
+        ctx.lineTo(-22, -20);
+        ctx.lineTo(-5, -40);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(-28, -22, -70, -10);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(25, -58);
+        ctx.lineTo(35, -35);
+        ctx.lineTo(32, -10);
+        ctx.lineTo(25, -12);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-20, -55);
+        ctx.lineTo(10, -45);
+        ctx.lineTo(30, -25);
+        ctx.lineTo(22, -20);
+        ctx.lineTo(5, -40);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        this.drawSword(28, -22, 70, -10);
+      }
+
+      this.drawLegs(direction === 'left' ? -3 : 3, 0, 5);
+    },
+
+    drawAttackThrust() {
+      this.drawHead(-8, 0);
+      this.drawTorso(-5, 0);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+      ctx.beginPath();
+      ctx.moveTo(-30, -58);
+      ctx.lineTo(-40, -35);
+      ctx.lineTo(-38, -10);
+      ctx.lineTo(-30, -12);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(20, -55);
+      ctx.lineTo(-15, -48);
+      ctx.lineTo(-30, -38);
+      ctx.lineTo(-22, -33);
+      ctx.lineTo(-10, -42);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      this.drawSword(-28, -35, -95, -38);
+      this.drawLegs(-5, 0, 8);
+    },
+
+    drawRecovery() {
+      ctx.save();
+      ctx.rotate(-0.08);
+      this.drawHead(3, 5);
+      this.drawTorso(3, 5);
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#3d1111';
+      ctx.beginPath();
+      ctx.moveTo(-22, -53);
+      ctx.lineTo(-35, -25);
+      ctx.lineTo(-30, 5);
+      ctx.lineTo(-23, 3);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(28, -53);
+      ctx.lineTo(40, -25);
+      ctx.lineTo(42, 10);
+      ctx.lineTo(35, 8);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      this.drawSword(40, 8, 50, 50);
+      const flash = 0.5 + 0.5 * Math.sin(this.poseTime * 8);
+      ctx.font = '800 16px Orbitron';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = `rgba(0,255,150,${flash})`;
+      ctx.fillText('VULNERABLE', 0, -120);
+      this.drawLegs(3, 5);
+      ctx.restore();
+    }
+  };
+
   // === STATE MACHINE ===
   const GameState = {
     TITLE: 'title',
@@ -599,15 +950,12 @@
   }
 
   function renderCombat() {
-    const pose = GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
-    PlayerRenderer.draw(pose, combatTime);
+    const playerPose = GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
+    PlayerRenderer.draw(playerPose, combatTime);
 
-    ctx.save();
-    ctx.textAlign = 'center';
-    ctx.font = '700 20px Rajdhani';
-    ctx.fillStyle = '#aaa';
-    ctx.fillText('Pose: ' + pose, PlayerRenderer.x, CANVAS_H - 20);
-    ctx.restore();
+    const enemyPoses = ['guard', 'telegraph_left', 'attack_left', 'recovery', 'telegraph_right', 'attack_right', 'telegraph_thrust', 'attack_thrust'];
+    const poseIndex = Math.floor(combatTime / 1.5) % enemyPoses.length;
+    EnemyRenderer.draw(enemyPoses[poseIndex], combatTime);
   }
 
   // === INPUT ===
