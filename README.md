@@ -2,7 +2,7 @@
 
 **Straw Blade** is a real-time gesture-controlled combat game that uses machine learning to recognize player gestures via webcam. The player holds a straw as a sword and performs physical gestures (block, attack, dodge) to battle enemies across 3 stages.
 
-**Play now:** [https://your-project.vercel.app](https://your-project.vercel.app)
+**Play now:** [https://straw-blade.vercel.app](https://straw-blade.vercel.app/)
 
 ---
 
