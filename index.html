@@ -1184,6 +1184,8 @@
         HUD.score += points;
         this.addDamageNumber(CANVAS_W / 2, CANVAS_H / 2 - 30, `+${points}`, '#00ffcc');
         Particles.spawnBlock(CANVAS_W / 2, CANVAS_H / 2);
+        AudioManager.sfxBlock();
+        if (HUD.combo > 0 && HUD.combo % 5 === 0) AudioManager.sfxCombo();
       } else {
         const damage = this.stage.damage;
         HUD.playerHP = Math.max(0, HUD.playerHP - damage);
@@ -1193,6 +1195,7 @@
         this.addDamageNumber(PlayerRenderer.x, PlayerRenderer.y - 120, `-${damage}`, '#ff4444');
         Particles.spawnHit(PlayerRenderer.x + 30, PlayerRenderer.y - 40);
         ScreenShake.trigger(8, 0.3);
+        AudioManager.sfxHit();
       }
     },
 
@@ -1206,6 +1209,7 @@
       this.addDamageNumber(EnemyRenderer.x, EnemyRenderer.y - 120, `-${damage}`, '#ff8800');
       Particles.spawnPlayerAttack(EnemyRenderer.x - 30, EnemyRenderer.y - 40);
       ScreenShake.trigger(5, 0.2);
+      AudioManager.sfxAttack();
       this.addDamageNumber(CANVAS_W / 2, CANVAS_H / 2 - 60, `+${points}`, '#ffcc00');
     },
 
@@ -1368,6 +1372,135 @@
     }
   };
 
+  // === AUDIO MANAGER ===
+  const AudioManager = {
+    ctx: null,
+    musicGain: null,
+    sfxGain: null,
+    musicInterval: null,
+    muted: false,
+
+    init() {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = 0.3;
+      this.musicGain.connect(this.ctx.destination);
+      this.sfxGain = this.ctx.createGain();
+      this.sfxGain.gain.value = 0.5;
+      this.sfxGain.connect(this.ctx.destination);
+    },
+
+    resume() {
+      if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+    },
+
+    playTone(freq, duration, type, gainNode, volume) {
+      if (!this.ctx || this.muted) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(volume || 0.3, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(gainNode || this.sfxGain);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    },
+
+    playNoise(duration, gainNode, volume) {
+      if (!this.ctx || this.muted) return;
+      const bufferSize = this.ctx.sampleRate * duration;
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.5;
+      }
+      const source = this.ctx.createBufferSource();
+      source.buffer = buffer;
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(volume || 0.2, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      source.connect(gain);
+      gain.connect(gainNode || this.sfxGain);
+      source.start();
+    },
+
+    sfxBlock() {
+      this.playTone(800, 0.1, 'square', this.sfxGain, 0.15);
+      this.playTone(1200, 0.08, 'square', this.sfxGain, 0.1);
+      this.playNoise(0.05, this.sfxGain, 0.15);
+    },
+
+    sfxHit() {
+      this.playTone(150, 0.3, 'sine', this.sfxGain, 0.3);
+      this.playTone(80, 0.2, 'triangle', this.sfxGain, 0.2);
+      this.playNoise(0.1, this.sfxGain, 0.25);
+    },
+
+    sfxAttack() {
+      this.playNoise(0.15, this.sfxGain, 0.2);
+      this.playTone(400, 0.1, 'sawtooth', this.sfxGain, 0.1);
+    },
+
+    sfxCombo() {
+      this.playTone(523, 0.15, 'sine', this.sfxGain, 0.2);
+      setTimeout(() => this.playTone(659, 0.15, 'sine', this.sfxGain, 0.2), 80);
+      setTimeout(() => this.playTone(784, 0.2, 'sine', this.sfxGain, 0.2), 160);
+    },
+
+    sfxLevelClear() {
+      const notes = [523, 659, 784, 1047];
+      notes.forEach((n, i) => {
+        setTimeout(() => this.playTone(n, 0.3, 'sine', this.sfxGain, 0.25), i * 150);
+      });
+    },
+
+    sfxGameOver() {
+      this.playTone(200, 1.0, 'sine', this.sfxGain, 0.3);
+      this.playTone(150, 1.2, 'triangle', this.sfxGain, 0.2);
+    },
+
+    sfxVictory() {
+      const notes = [523, 659, 784, 659, 784, 1047];
+      notes.forEach((n, i) => {
+        setTimeout(() => this.playTone(n, 0.25, 'sine', this.sfxGain, 0.25), i * 120);
+      });
+    },
+
+    startMusic(bpm) {
+      this.stopMusic();
+      const interval = 60000 / bpm / 2;
+      let beat = 0;
+      const bassNotes = [110, 110, 130.81, 110, 146.83, 146.83, 130.81, 110];
+      this.musicInterval = setInterval(() => {
+        if (this.muted) return;
+        const note = bassNotes[beat % bassNotes.length];
+        this.playTone(note, 0.15, 'triangle', this.musicGain, 0.2);
+        if (beat % 4 === 0) {
+          this.playTone(55, 0.1, 'sine', this.musicGain, 0.3);
+          this.playNoise(0.03, this.musicGain, 0.1);
+        }
+        if (beat % 2 === 1) {
+          this.playNoise(0.03, this.musicGain, 0.05);
+        }
+        beat++;
+      }, interval);
+    },
+
+    stopMusic() {
+      if (this.musicInterval) {
+        clearInterval(this.musicInterval);
+        this.musicInterval = null;
+      }
+    },
+
+    toggle() {
+      this.muted = !this.muted;
+      if (this.muted) this.stopMusic();
+    }
+  };
+
   // === STATE MACHINE ===
   const GameState = {
     TITLE: 'title',
@@ -1391,17 +1524,27 @@
   function onStateEnter(state) {
     if (state === GameState.WEBCAM_SETUP) {
       webcamSetupTime = 0;
+      AudioManager.init();
       enterWebcamSetup();
     } else if (state === GameState.LEVEL_INTRO) {
       introTime = 0;
     } else if (state === GameState.COMBAT) {
       startCombat(currentStageIndex);
+      const bpms = [100, 120, 140];
+      AudioManager.resume();
+      AudioManager.startMusic(bpms[currentStageIndex]);
     } else if (state === GameState.LEVEL_CLEAR) {
       clearTime = 0;
+      AudioManager.stopMusic();
+      AudioManager.sfxLevelClear();
     } else if (state === GameState.GAME_OVER) {
       gameOverTime = 0;
+      AudioManager.stopMusic();
+      AudioManager.sfxGameOver();
     } else if (state === GameState.VICTORY) {
       victoryTime = 0;
+      AudioManager.stopMusic();
+      AudioManager.sfxVictory();
     }
   }
 
@@ -1806,6 +1949,12 @@
       currentStageIndex = 0;
       HUD.playerHP = HUD.playerMaxHP;
       setState(GameState.TITLE);
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'm' || e.key === 'M') {
+      AudioManager.toggle();
     }
   });
 
