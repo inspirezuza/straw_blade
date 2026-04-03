@@ -1270,10 +1270,15 @@
       webcamSetupTime = 0;
       enterWebcamSetup();
     } else if (state === GameState.LEVEL_INTRO) {
-      // Will be implemented in Task 7, for now skip to combat
-      setState(GameState.COMBAT);
+      introTime = 0;
     } else if (state === GameState.COMBAT) {
       startCombat(currentStageIndex);
+    } else if (state === GameState.LEVEL_CLEAR) {
+      clearTime = 0;
+    } else if (state === GameState.GAME_OVER) {
+      gameOverTime = 0;
+    } else if (state === GameState.VICTORY) {
+      victoryTime = 0;
     }
   }
 
@@ -1294,7 +1299,11 @@
     switch (currentState) {
       case GameState.TITLE: updateTitle(dt); break;
       case GameState.WEBCAM_SETUP: updateWebcamSetup(dt); break;
+      case GameState.LEVEL_INTRO: updateLevelIntro(dt); break;
       case GameState.COMBAT: updateCombat(dt); break;
+      case GameState.LEVEL_CLEAR: updateLevelClear(dt); break;
+      case GameState.GAME_OVER: updateGameOver(dt); break;
+      case GameState.VICTORY: updateVictory(dt); break;
     }
   }
 
@@ -1314,7 +1323,11 @@
     switch (currentState) {
       case GameState.TITLE: renderTitle(); break;
       case GameState.WEBCAM_SETUP: renderWebcamSetup(); break;
+      case GameState.LEVEL_INTRO: renderLevelIntro(); break;
       case GameState.COMBAT: renderCombat(); break;
+      case GameState.LEVEL_CLEAR: renderLevelClear(); break;
+      case GameState.GAME_OVER: renderGameOver(); break;
+      case GameState.VICTORY: renderVictory(); break;
     }
   }
 
@@ -1411,6 +1424,203 @@
     ctx.restore();
   }
 
+  // === LEVEL INTRO SCREEN ===
+  let introTime = 0;
+  let introStage = 0;
+
+  function updateLevelIntro(dt) {
+    introTime += dt;
+    if (introTime >= 4.0) {
+      setState(GameState.COMBAT);
+    }
+  }
+
+  function renderLevelIntro() {
+    const stageLabels = ['I', 'II', 'III'];
+    const enemyNames = ['SHADOW', 'WRAITH', 'DEMON LORD'];
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    if (introTime < 1.5) {
+      const scale = Math.min(1, introTime * 2);
+      ctx.globalAlpha = scale;
+      ctx.font = '700 20px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('STAGE', CANVAS_W / 2, CANVAS_H / 2 - 60);
+      ctx.font = '900 72px Orbitron';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(255,204,0,0.8)';
+      ctx.shadowBlur = 30;
+      ctx.fillText(stageLabels[currentStageIndex], CANVAS_W / 2, CANVAS_H / 2);
+      ctx.shadowBlur = 0;
+      ctx.font = '800 24px Orbitron';
+      ctx.fillStyle = '#ff5555';
+      ctx.fillText('VS  ' + enemyNames[currentStageIndex], CANVAS_W / 2, CANVAS_H / 2 + 50);
+    }
+
+    if (introTime >= 1.5 && introTime < 4.0) {
+      const countNum = 3 - Math.floor(introTime - 1.5);
+      if (countNum > 0) {
+        const pulse = 1 + 0.3 * Math.sin((introTime - 1.5) * 10);
+        ctx.scale(pulse, pulse);
+        ctx.font = '900 80px Orbitron';
+        ctx.fillStyle = '#fff';
+        ctx.shadowColor = 'rgba(255,255,255,0.6)';
+        ctx.shadowBlur = 20;
+        ctx.fillText(countNum.toString(), CANVAS_W / 2 / pulse, CANVAS_H / 2 / pulse);
+      } else {
+        ctx.font = '900 64px Orbitron';
+        ctx.fillStyle = '#ff4444';
+        ctx.shadowColor = 'rgba(255,50,50,0.8)';
+        ctx.shadowBlur = 30;
+        ctx.fillText('FIGHT!', CANVAS_W / 2, CANVAS_H / 2);
+      }
+    }
+
+    ctx.restore();
+  }
+
+  // === LEVEL CLEAR SCREEN ===
+  let clearTime = 0;
+
+  function updateLevelClear(dt) {
+    clearTime += dt;
+  }
+
+  function renderLevelClear() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fadeIn = Math.min(1, clearTime * 2);
+    ctx.globalAlpha = fadeIn;
+
+    ctx.font = '900 48px Orbitron';
+    ctx.fillStyle = '#00ffcc';
+    ctx.shadowColor = 'rgba(0,255,200,0.6)';
+    ctx.shadowBlur = 25;
+    ctx.fillText('STAGE CLEAR!', CANVAS_W / 2, 150);
+    ctx.shadowBlur = 0;
+
+    ctx.font = '700 22px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('SCORE', CANVAS_W / 2, 250);
+    ctx.font = '800 40px Orbitron';
+    ctx.fillStyle = '#ffee55';
+    ctx.fillText(HUD.score.toLocaleString(), CANVAS_W / 2, 290);
+
+    ctx.font = '700 20px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText(`HP REMAINING: ${Math.ceil(HUD.playerHP)}/${HUD.playerMaxHP}`, CANVAS_W / 2, 350);
+
+    if (clearTime > 1.5) {
+      const alpha = 0.5 + 0.5 * Math.sin(clearTime * 3);
+      ctx.font = '800 24px Orbitron';
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillText('CLICK FOR NEXT STAGE', CANVAS_W / 2, 460);
+    }
+
+    ctx.restore();
+  }
+
+  // === GAME OVER SCREEN ===
+  let gameOverTime = 0;
+
+  function updateGameOver(dt) {
+    gameOverTime += dt;
+  }
+
+  function renderGameOver() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fadeIn = Math.min(1, gameOverTime * 1.5);
+    ctx.globalAlpha = fadeIn;
+
+    const vigGrad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H / 2, 100, CANVAS_W / 2, CANVAS_H / 2, CANVAS_W);
+    vigGrad.addColorStop(0, 'transparent');
+    vigGrad.addColorStop(1, 'rgba(150,0,0,0.3)');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    ctx.font = '900 56px Orbitron';
+    ctx.fillStyle = '#ff2222';
+    ctx.shadowColor = 'rgba(255,0,0,0.7)';
+    ctx.shadowBlur = 30;
+    ctx.fillText('GAME OVER', CANVAS_W / 2, CANVAS_H / 2 - 60);
+    ctx.shadowBlur = 0;
+
+    ctx.font = '700 22px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('FINAL SCORE', CANVAS_W / 2, CANVAS_H / 2 + 10);
+    ctx.font = '800 36px Orbitron';
+    ctx.fillStyle = '#ffee55';
+    ctx.fillText(HUD.score.toLocaleString(), CANVAS_W / 2, CANVAS_H / 2 + 50);
+
+    if (gameOverTime > 2) {
+      const alpha = 0.5 + 0.5 * Math.sin(gameOverTime * 3);
+      ctx.font = '800 22px Orbitron';
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillText('CLICK TO RETRY', CANVAS_W / 2, CANVAS_H / 2 + 130);
+    }
+
+    ctx.restore();
+  }
+
+  // === VICTORY SCREEN ===
+  let victoryTime = 0;
+
+  function updateVictory(dt) {
+    victoryTime += dt;
+  }
+
+  function renderVictory() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const fadeIn = Math.min(1, victoryTime * 1.5);
+    ctx.globalAlpha = fadeIn;
+
+    const vigGrad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H / 2, 50, CANVAS_W / 2, CANVAS_H / 2, CANVAS_W);
+    vigGrad.addColorStop(0, 'rgba(255,220,0,0.1)');
+    vigGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = vigGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    ctx.font = '900 52px Orbitron';
+    ctx.fillStyle = '#ffcc00';
+    ctx.shadowColor = 'rgba(255,204,0,0.8)';
+    ctx.shadowBlur = 30;
+    ctx.fillText('VICTORY!', CANVAS_W / 2, 150);
+    ctx.shadowBlur = 0;
+
+    ctx.font = '700 24px Rajdhani';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('ALL STAGES COMPLETE', CANVAS_W / 2, 220);
+
+    ctx.font = '700 20px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('TOTAL SCORE', CANVAS_W / 2, 300);
+    ctx.font = '900 48px Orbitron';
+    ctx.fillStyle = '#ffee55';
+    ctx.shadowColor = 'rgba(255,220,0,0.5)';
+    ctx.shadowBlur = 15;
+    ctx.fillText(HUD.score.toLocaleString(), CANVAS_W / 2, 350);
+    ctx.shadowBlur = 0;
+
+    if (victoryTime > 2) {
+      const alpha = 0.5 + 0.5 * Math.sin(victoryTime * 3);
+      ctx.font = '800 22px Orbitron';
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+      ctx.fillText('CLICK TO PLAY AGAIN', CANVAS_W / 2, 480);
+    }
+
+    ctx.restore();
+  }
+
   // === COMBAT SCREEN ===
   let combatTime = 0;
   let combatResult = 'fighting';
@@ -1450,7 +1660,19 @@
     if (currentState === GameState.TITLE) {
       setState(GameState.WEBCAM_SETUP);
     } else if (currentState === GameState.WEBCAM_SETUP && webcamSetupStatus === 'ready') {
+      currentStageIndex = 0;
       setState(GameState.LEVEL_INTRO);
+    } else if (currentState === GameState.LEVEL_CLEAR && clearTime > 1.5) {
+      currentStageIndex++;
+      setState(GameState.LEVEL_INTRO);
+    } else if (currentState === GameState.GAME_OVER && gameOverTime > 2) {
+      currentStageIndex = 0;
+      HUD.playerHP = HUD.playerMaxHP;
+      setState(GameState.TITLE);
+    } else if (currentState === GameState.VICTORY && victoryTime > 2) {
+      currentStageIndex = 0;
+      HUD.playerHP = HUD.playerMaxHP;
+      setState(GameState.TITLE);
     }
   });
 
