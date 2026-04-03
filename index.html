@@ -979,6 +979,14 @@
       ctx.fillText(`${this.reactionTime.toFixed(2)}s`, CANVAS_W - 20, CANVAS_H - 40);
       ctx.shadowBlur = 0;
       ctx.restore();
+
+      // Mute indicator
+      if (AudioManager.muted) {
+        ctx.font = '700 14px Rajdhani';
+        ctx.fillStyle = '#ff4444';
+        ctx.textAlign = 'center';
+        ctx.fillText('MUTED (M)', CANVAS_W / 2, CANVAS_H - 10);
+      }
     },
 
     drawCombo(time) {
@@ -1093,10 +1101,13 @@
       this.attackCooldown = 0;
       this.damageNumbers = [];
 
-      HUD.playerHP = HUD.playerMaxHP;
+      // Only reset player HP on first stage
+      if (stageIndex === 0) {
+        HUD.playerHP = HUD.playerMaxHP;
+        HUD.score = 0;
+      }
       HUD.enemyHP = HUD.enemyMaxHP;
       HUD.combo = 0;
-      HUD.score = 0;
       HUD.stage = stageIndex + 1;
     },
 
@@ -1597,33 +1608,86 @@
     }
   }
 
-  // === TITLE SCREEN (placeholder) ===
+  // === TITLE SCREEN ===
   let titleTime = 0;
+  let titleParticles = [];
 
   function updateTitle(dt) {
     titleTime += dt;
+    if (Math.random() < dt * 3 && titleParticles.length < 80) {
+      titleParticles.push({
+        x: Math.random() * CANVAS_W,
+        y: CANVAS_H + 5,
+        vx: (Math.random() - 0.5) * 15,
+        vy: -Math.random() * 30 - 15,
+        size: Math.random() * 2.5 + 0.5,
+        life: Math.random() * 5 + 3,
+        maxLife: 8,
+        color: ['#4488ff', '#ff4444', '#ffcc00', '#aa66ff'][Math.floor(Math.random() * 4)]
+      });
+    }
+    titleParticles = titleParticles.filter(p => {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+      return p.life > 0;
+    });
   }
 
   function renderTitle() {
+    // Draw particles
+    for (const p of titleParticles) {
+      const alpha = Math.max(0, p.life / p.maxLife) * 0.5;
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Title glow background
+    const glowGrad = ctx.createRadialGradient(CANVAS_W / 2, CANVAS_H / 2 - 40, 0, CANVAS_W / 2, CANVAS_H / 2 - 40, 250);
+    glowGrad.addColorStop(0, 'rgba(255,204,0,0.08)');
+    glowGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
     // Title text
     const glow = 0.5 + 0.5 * Math.sin(titleTime * 2);
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '900 64px Orbitron';
+    ctx.font = '900 68px Orbitron';
     ctx.shadowColor = `rgba(255, 204, 0, ${glow * 0.8})`;
-    ctx.shadowBlur = 30;
+    ctx.shadowBlur = 40;
     ctx.fillStyle = '#fff';
     ctx.fillText('STRAW BLADE', CANVAS_W / 2, CANVAS_H / 2 - 40);
+    ctx.restore();
+
+    // Subtitle
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '600 18px Rajdhani';
+    ctx.fillStyle = 'rgba(200,200,200,0.6)';
+    ctx.fillText('GESTURE COMBAT', CANVAS_W / 2, CANVAS_H / 2 + 10);
     ctx.restore();
 
     // Start prompt
     const alpha = 0.5 + 0.5 * Math.sin(titleTime * 3);
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = '700 24px Rajdhani';
+    ctx.font = '800 22px Orbitron';
     ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-    ctx.fillText('CLICK TO START', CANVAS_W / 2, CANVAS_H / 2 + 40);
+    ctx.fillText('CLICK TO START', CANVAS_W / 2, CANVAS_H / 2 + 80);
+    ctx.restore();
+
+    // Mute hint
+    ctx.save();
+    ctx.textAlign = 'right';
+    ctx.font = '600 14px Rajdhani';
+    ctx.fillStyle = '#555';
+    ctx.fillText('Press M to toggle sound', CANVAS_W - 20, CANVAS_H - 20);
     ctx.restore();
   }
 
