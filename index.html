@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Straw Blade</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <script>
+  // === CONSTANTS ===
+  const CANVAS_W = 960;
+  const CANVAS_H = 640;
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = CANVAS_W;
+  canvas.height = CANVAS_H;
+
+  // === STATE MACHINE ===
+  const GameState = {
+    TITLE: 'title',
+    WEBCAM_SETUP: 'webcam_setup',
+    LEVEL_INTRO: 'level_intro',
+    COMBAT: 'combat',
+    LEVEL_CLEAR: 'level_clear',
+    GAME_OVER: 'game_over',
+    VICTORY: 'victory'
+  };
+
+  let currentState = GameState.TITLE;
+  let previousState = null;
+
+  function setState(newState) {
+    previousState = currentState;
+    currentState = newState;
+    onStateEnter(newState);
+  }
+
+  function onStateEnter(state) {
+    // Will be filled in by each screen module
+  }
+
+  // === GAME LOOP ===
+  let lastTime = 0;
+
+  function gameLoop(timestamp) {
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05); // cap delta at 50ms
+    lastTime = timestamp;
+
+    update(dt);
+    render();
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function update(dt) {
+    switch (currentState) {
+      case GameState.TITLE: updateTitle(dt); break;
+      case GameState.COMBAT: updateCombat(dt); break;
+    }
+  }
+
+  function render() {
+    // Clear with dark background
+    ctx.fillStyle = '#060612';
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Background gradient
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
+    bgGrad.addColorStop(0, '#060612');
+    bgGrad.addColorStop(0.4, '#12082a');
+    bgGrad.addColorStop(1, '#0a0a20');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+    switch (currentState) {
+      case GameState.TITLE: renderTitle(); break;
+      case GameState.COMBAT: renderCombat(); break;
+    }
+  }
+
+  // === TITLE SCREEN (placeholder) ===
+  let titleTime = 0;
+
+  function updateTitle(dt) {
+    titleTime += dt;
+  }
+
+  function renderTitle() {
+    // Title text
+    const glow = 0.5 + 0.5 * Math.sin(titleTime * 2);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 64px Orbitron';
+    ctx.shadowColor = `rgba(255, 204, 0, ${glow * 0.8})`;
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = '#fff';
+    ctx.fillText('STRAW BLADE', CANVAS_W / 2, CANVAS_H / 2 - 40);
+    ctx.restore();
+
+    // Start prompt
+    const alpha = 0.5 + 0.5 * Math.sin(titleTime * 3);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '700 24px Rajdhani';
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.fillText('CLICK TO START', CANVAS_W / 2, CANVAS_H / 2 + 40);
+    ctx.restore();
+  }
+
+  // === COMBAT SCREEN (placeholder) ===
+  function updateCombat(dt) {}
+
+  function renderCombat() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.font = '700 32px Rajdhani';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('COMBAT STATE - PLACEHOLDER', CANVAS_W / 2, CANVAS_H / 2);
+    ctx.restore();
+  }
+
+  // === INPUT ===
+  canvas.addEventListener('click', () => {
+    if (currentState === GameState.TITLE) {
+      setState(GameState.WEBCAM_SETUP);
+    }
+  });
+
+  // === START ===
+  requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
