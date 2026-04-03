@@ -88,6 +88,348 @@
     }
   };
 
+  // === PLAYER RENDERER ===
+  const PlayerRenderer = {
+    x: 160,
+    y: 380,
+    currentPose: 'idle',
+    poseTime: 0,
+
+    draw(pose, time) {
+      this.currentPose = pose;
+      this.poseTime = time;
+      ctx.save();
+      ctx.translate(this.x, this.y);
+
+      // Floor glow
+      ctx.beginPath();
+      const floorGrad = ctx.createRadialGradient(0, 110, 0, 0, 110, 60);
+      floorGrad.addColorStop(0, 'rgba(0,150,255,0.4)');
+      floorGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = floorGrad;
+      ctx.fillRect(-60, 90, 120, 40);
+
+      // Aura glow
+      const auraPulse = 0.6 + 0.4 * Math.sin(time * 3);
+      ctx.shadowColor = `rgba(0,100,255,${auraPulse * 0.5})`;
+      ctx.shadowBlur = 20;
+
+      switch (pose) {
+        case 'idle': this.drawIdle(); break;
+        case 'block_left': this.drawBlockLeft(); break;
+        case 'block_right': this.drawBlockRight(); break;
+        case 'attack': this.drawAttack(); break;
+        case 'dodge': this.drawDodge(); break;
+        case 'hit_stagger': this.drawHitStagger(); break;
+        default: this.drawIdle(); break;
+      }
+
+      ctx.restore();
+    },
+
+    drawHead(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.arc(offsetX, offsetY - 82, 16, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a3a6e';
+      ctx.fill();
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,220,255,0.8)';
+      ctx.fillRect(offsetX - 12, offsetY - 86, 24, 5);
+    },
+
+    drawTorso(offsetX, offsetY) {
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 25, offsetY - 62);
+      ctx.lineTo(offsetX + 25, offsetY - 62);
+      ctx.lineTo(offsetX + 28, offsetY);
+      ctx.lineTo(offsetX - 28, offsetY);
+      ctx.closePath();
+      const tGrad = ctx.createLinearGradient(0, offsetY - 62, 0, offsetY);
+      tGrad.addColorStop(0, '#2255cc');
+      tGrad.addColorStop(1, '#0d1a33');
+      ctx.fillStyle = tGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(offsetX - 27, offsetY - 60, 11, 7, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#2255cc';
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(offsetX + 27, offsetY - 60, 11, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    },
+
+    drawLegs(offsetX, offsetY, spread) {
+      const s = spread || 0;
+      ctx.strokeStyle = '#3366bb';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(offsetX - 12, offsetY);
+      ctx.lineTo(offsetX - 18 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 8 - s, offsetY + 55);
+      ctx.lineTo(offsetX - 5, offsetY + 5);
+      ctx.fillStyle = '#0d1a33';
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(offsetX + 12, offsetY);
+      ctx.lineTo(offsetX + 18 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 8 + s, offsetY + 55);
+      ctx.lineTo(offsetX + 5, offsetY + 5);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#1a3366';
+      ctx.strokeStyle = '#55aaff';
+      ctx.fillRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX - 22 - s, offsetY + 52, 18, 10);
+      ctx.fillRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+      ctx.strokeRect(offsetX + 4 + s, offsetY + 52, 18, 10);
+    },
+
+    drawIdle() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-38, -30);
+      ctx.lineTo(-35, 0);
+      ctx.lineTo(-28, -2);
+      ctx.lineTo(-30, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(38, -30);
+      ctx.lineTo(35, 0);
+      ctx.lineTo(28, -2);
+      ctx.lineTo(30, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(36, -2);
+      ctx.lineTo(42, -40);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffeeaa';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(42, -40);
+      ctx.lineTo(44, -50);
+      ctx.stroke();
+      this.drawLegs(0, 0);
+    },
+
+    drawBlockLeft() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-45, -55);
+      ctx.lineTo(-50, -15);
+      ctx.lineTo(-35, -10);
+      ctx.lineTo(-32, -50);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(-52, -35, 15, 22, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#2255cc';
+      ctx.fill();
+      ctx.strokeStyle = '#77bbff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(150,200,255,0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-52, -55);
+      ctx.lineTo(-52, -15);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-65, -35);
+      ctx.lineTo(-39, -35);
+      ctx.stroke();
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(35, -35);
+      ctx.lineTo(32, -5);
+      ctx.lineTo(25, -7);
+      ctx.lineTo(28, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(33, -7);
+      ctx.lineTo(38, -45);
+      ctx.stroke();
+      this.drawLegs(0, 0);
+    },
+
+    drawBlockRight() {
+      this.drawHead(0, 0);
+      this.drawTorso(0, 0);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(-25, -58);
+      ctx.lineTo(-35, -35);
+      ctx.lineTo(-32, -5);
+      ctx.lineTo(-25, -7);
+      ctx.lineTo(-28, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(25, -58);
+      ctx.lineTo(45, -55);
+      ctx.lineTo(50, -15);
+      ctx.lineTo(35, -10);
+      ctx.lineTo(32, -50);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(40, -55);
+      ctx.lineTo(48, -10);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffeeaa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(40, -55);
+      ctx.lineTo(38, -62);
+      ctx.stroke();
+      this.drawLegs(0, 0);
+    },
+
+    drawAttack() {
+      this.drawHead(5, 0);
+      this.drawTorso(5, 0);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(-20, -58);
+      ctx.lineTo(-35, -40);
+      ctx.lineTo(-30, -10);
+      ctx.lineTo(-23, -12);
+      ctx.lineTo(-28, -38);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(30, -55);
+      ctx.lineTo(55, -50);
+      ctx.lineTo(65, -35);
+      ctx.lineTo(55, -32);
+      ctx.lineTo(48, -45);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(63, -34);
+      ctx.lineTo(110, -38);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffeeaa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(110, -38);
+      ctx.lineTo(120, -39);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,220,0,0.15)';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(63, -34);
+      ctx.lineTo(120, -39);
+      ctx.stroke();
+      this.drawLegs(5, 0, 5);
+    },
+
+    drawDodge() {
+      ctx.save();
+      ctx.translate(0, 25);
+      ctx.rotate(-0.15);
+      this.drawHead(-10, 10);
+      this.drawTorso(-5, 10);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(-30, -48);
+      ctx.lineTo(-40, -25);
+      ctx.lineTo(-30, -5);
+      ctx.lineTo(-23, -8);
+      ctx.lineTo(-33, -25);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(20, -48);
+      ctx.lineTo(30, -25);
+      ctx.lineTo(25, -5);
+      ctx.lineTo(18, -8);
+      ctx.lineTo(23, -25);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(26, -7);
+      ctx.lineTo(15, -45);
+      ctx.stroke();
+      this.drawLegs(-5, 10, 10);
+      ctx.restore();
+    },
+
+    drawHitStagger() {
+      ctx.save();
+      ctx.rotate(0.1);
+      this.drawHead(-8, 5);
+      this.drawTorso(-5, 5);
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#1a3366';
+      ctx.beginPath();
+      ctx.moveTo(-30, -53);
+      ctx.lineTo(-50, -35);
+      ctx.lineTo(-48, -10);
+      ctx.lineTo(-40, -12);
+      ctx.lineTo(-43, -33);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(20, -53);
+      ctx.lineTo(45, -30);
+      ctx.lineTo(50, -5);
+      ctx.lineTo(42, -7);
+      ctx.lineTo(38, -28);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ffdd44';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(48, -8);
+      ctx.lineTo(60, 15);
+      ctx.stroke();
+      this.drawLegs(-5, 5);
+      ctx.restore();
+    }
+  };
+
   // === STATE MACHINE ===
   const GameState = {
     TITLE: 'title',
@@ -249,15 +591,22 @@
     ctx.restore();
   }
 
-  // === COMBAT SCREEN (placeholder) ===
-  function updateCombat(dt) {}
+  // === COMBAT SCREEN ===
+  let combatTime = 0;
+
+  function updateCombat(dt) {
+    combatTime += dt;
+  }
 
   function renderCombat() {
+    const pose = GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
+    PlayerRenderer.draw(pose, combatTime);
+
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.font = '700 32px Rajdhani';
-    ctx.fillStyle = '#fff';
-    ctx.fillText('COMBAT STATE - PLACEHOLDER', CANVAS_W / 2, CANVAS_H / 2);
+    ctx.font = '700 20px Rajdhani';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Pose: ' + pose, PlayerRenderer.x, CANVAS_H - 20);
     ctx.restore();
   }
 
