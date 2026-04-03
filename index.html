@@ -781,6 +781,226 @@
     }
   };
 
+  // === HUD ===
+  const HUD = {
+    playerHP: 100,
+    playerMaxHP: 100,
+    enemyHP: 100,
+    enemyMaxHP: 100,
+    score: 0,
+    combo: 0,
+    stage: 1,
+    playerHPFlash: 0,
+    enemyHPFlash: 0,
+    comboScale: 1,
+    reactionTime: 0,
+
+    update(dt) {
+      if (this.playerHPFlash > 0) this.playerHPFlash -= dt * 4;
+      if (this.enemyHPFlash > 0) this.enemyHPFlash -= dt * 4;
+      if (this.comboScale > 1) this.comboScale = Math.max(1, this.comboScale - dt * 4);
+    },
+
+    flashPlayerHP() { this.playerHPFlash = 1; },
+    flashEnemyHP() { this.enemyHPFlash = 1; },
+    popCombo() { this.comboScale = 1.5; },
+
+    draw(time) {
+      this.drawTopBar(time);
+      this.drawBottomBar(time);
+      if (this.combo > 1) this.drawCombo(time);
+    },
+
+    drawHPBar(x, y, w, current, max, color1, color2, borderColor, flash) {
+      const ratio = Math.max(0, current / max);
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, 14, 4);
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, 14, 4);
+      ctx.stroke();
+      const hpGrad = ctx.createLinearGradient(x, 0, x + w * ratio, 0);
+      hpGrad.addColorStop(0, color1);
+      hpGrad.addColorStop(1, color2);
+      ctx.fillStyle = hpGrad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w * ratio, 14, 4);
+      ctx.fill();
+      if (flash > 0) {
+        ctx.fillStyle = `rgba(255,255,255,${flash * 0.5})`;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, 14, 4);
+        ctx.fill();
+      }
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fillRect(x + 2, y + 1, w * ratio - 4, 5);
+    },
+
+    drawTopBar(time) {
+      const topGrad = ctx.createLinearGradient(0, 0, 0, 90);
+      topGrad.addColorStop(0, 'rgba(0,0,0,0.85)');
+      topGrad.addColorStop(0.8, 'rgba(0,0,0,0.3)');
+      topGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, CANVAS_W, 90);
+
+      ctx.save();
+      // Player icon
+      ctx.beginPath();
+      ctx.arc(36, 32, 18, 0, Math.PI * 2);
+      const iconGrad = ctx.createLinearGradient(18, 14, 54, 50);
+      iconGrad.addColorStop(0, '#1a3a6e');
+      iconGrad.addColorStop(1, '#2255cc');
+      ctx.fillStyle = iconGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#55aaff';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('\u26A1', 36, 33);
+
+      // Player name
+      ctx.font = '900 16px Orbitron';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(100,180,255,0.3)';
+      ctx.shadowBlur = 10;
+      ctx.fillText('WARRIOR', 62, 18);
+      ctx.shadowBlur = 0;
+
+      // Player HP bar
+      this.drawHPBar(62, 42, 230, this.playerHP, this.playerMaxHP, '#0066ff', '#00ddff', 'rgba(68,180,255,0.5)', this.playerHPFlash);
+
+      // Player HP text
+      ctx.font = '700 13px Rajdhani';
+      ctx.fillStyle = '#bbddff';
+      ctx.fillText(`${Math.ceil(this.playerHP)} / ${this.playerMaxHP} HP`, 62, 60);
+
+      // Center - Stage
+      ctx.textAlign = 'center';
+      ctx.font = '700 12px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('STAGE', CANVAS_W / 2, 10);
+      ctx.font = '900 28px Orbitron';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(255,204,0,0.6)';
+      ctx.shadowBlur = 20;
+      const stageLabels = ['I', 'II', 'III'];
+      ctx.fillText(stageLabels[this.stage - 1] || 'I', CANVAS_W / 2, 35);
+      ctx.shadowBlur = 0;
+      ctx.font = '800 14px Orbitron';
+      ctx.fillStyle = '#ffee66';
+      ctx.shadowColor = 'rgba(255,220,0,0.3)';
+      ctx.shadowBlur = 8;
+      ctx.fillText(this.score.toLocaleString(), CANVAS_W / 2, 58);
+      ctx.shadowBlur = 0;
+
+      // Enemy icon
+      ctx.beginPath();
+      ctx.arc(CANVAS_W - 36, 32, 18, 0, Math.PI * 2);
+      const eIconGrad = ctx.createLinearGradient(CANVAS_W - 54, 14, CANVAS_W - 18, 50);
+      eIconGrad.addColorStop(0, '#6e1a1a');
+      eIconGrad.addColorStop(1, '#cc2222');
+      ctx.fillStyle = eIconGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#ff5555';
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.fillText('\uD83D\uDC80', CANVAS_W - 36, 33);
+
+      // Enemy name
+      const enemyNames = ['SHADOW', 'WRAITH', 'DEMON LORD'];
+      ctx.font = '900 16px Orbitron';
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#fff';
+      ctx.shadowColor = 'rgba(255,80,80,0.3)';
+      ctx.shadowBlur = 10;
+      ctx.fillText(enemyNames[this.stage - 1] || 'SHADOW', CANVAS_W - 62, 18);
+      ctx.shadowBlur = 0;
+
+      // Enemy HP bar
+      this.drawHPBar(CANVAS_W - 292, 42, 230, this.enemyHP, this.enemyMaxHP, '#ff0033', '#ff4466', 'rgba(255,80,80,0.5)', this.enemyHPFlash);
+
+      // Enemy HP text
+      ctx.textAlign = 'right';
+      ctx.font = '700 13px Rajdhani';
+      ctx.fillStyle = '#ffaaaa';
+      ctx.fillText(`${Math.ceil(this.enemyHP)} / ${this.enemyMaxHP} HP`, CANVAS_W - 62, 60);
+
+      ctx.restore();
+    },
+
+    drawBottomBar(time) {
+      const botGrad = ctx.createLinearGradient(0, CANVAS_H - 70, 0, CANVAS_H);
+      botGrad.addColorStop(0, 'transparent');
+      botGrad.addColorStop(0.3, 'rgba(0,0,0,0.5)');
+      botGrad.addColorStop(1, 'rgba(0,0,0,0.9)');
+      ctx.fillStyle = botGrad;
+      ctx.fillRect(0, CANVAS_H - 70, CANVAS_W, 70);
+
+      GestureDetector.drawWebcamPreview(20, CANVAS_H - 60, 80, 52);
+
+      ctx.save();
+      ctx.textBaseline = 'top';
+      ctx.font = '700 11px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.textAlign = 'left';
+      ctx.fillText('GESTURE', 115, CANVAS_H - 55);
+      ctx.font = '800 16px Orbitron';
+      ctx.fillStyle = '#00ffcc';
+      ctx.shadowColor = 'rgba(0,255,200,0.5)';
+      ctx.shadowBlur = 10;
+      const gestureName = GestureDetector.currentGesture.toUpperCase().replace('_', ' ');
+      ctx.fillText(gestureName, 115, CANVAS_H - 40);
+      ctx.shadowBlur = 0;
+      ctx.font = '700 13px Rajdhani';
+      ctx.fillStyle = '#888';
+      ctx.fillText(`${Math.round(GestureDetector.confidence * 100)}%`, 115, CANVAS_H - 22);
+
+      ctx.textAlign = 'right';
+      ctx.font = '700 11px Rajdhani';
+      ctx.fillStyle = '#aaa';
+      ctx.fillText('REACTION', CANVAS_W - 20, CANVAS_H - 55);
+      ctx.font = '800 16px Orbitron';
+      ctx.fillStyle = '#ffee55';
+      ctx.shadowColor = 'rgba(255,220,0,0.5)';
+      ctx.shadowBlur = 10;
+      ctx.fillText(`${this.reactionTime.toFixed(2)}s`, CANVAS_W - 20, CANVAS_H - 40);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    },
+
+    drawCombo(time) {
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const scale = this.comboScale;
+      ctx.translate(CANVAS_W / 2, CANVAS_H / 2 + 40);
+      ctx.scale(scale, scale);
+      ctx.font = '900 42px Orbitron';
+      ctx.fillStyle = '#ff9900';
+      ctx.shadowColor = 'rgba(255,120,0,0.7)';
+      ctx.shadowBlur = 25;
+      ctx.fillText(`x${this.combo}`, 0, 0);
+      ctx.shadowBlur = 0;
+      ctx.font = '800 14px Orbitron';
+      ctx.fillStyle = '#ddaa44';
+      ctx.fillText('COMBO', 0, 28);
+      ctx.restore();
+    }
+  };
+
   // === STATE MACHINE ===
   const GameState = {
     TITLE: 'title',
@@ -947,15 +1167,18 @@
 
   function updateCombat(dt) {
     combatTime += dt;
+    HUD.update(dt);
   }
 
   function renderCombat() {
     const playerPose = GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
     PlayerRenderer.draw(playerPose, combatTime);
 
-    const enemyPoses = ['guard', 'telegraph_left', 'attack_left', 'recovery', 'telegraph_right', 'attack_right', 'telegraph_thrust', 'attack_thrust'];
+    const enemyPoses = ['guard', 'telegraph_left', 'attack_left', 'recovery'];
     const poseIndex = Math.floor(combatTime / 1.5) % enemyPoses.length;
     EnemyRenderer.draw(enemyPoses[poseIndex], combatTime);
+
+    HUD.draw(combatTime);
   }
 
   // === INPUT ===
