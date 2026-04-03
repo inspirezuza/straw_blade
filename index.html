@@ -1183,6 +1183,7 @@
         const points = 100 * Math.max(1, HUD.combo);
         HUD.score += points;
         this.addDamageNumber(CANVAS_W / 2, CANVAS_H / 2 - 30, `+${points}`, '#00ffcc');
+        Particles.spawnBlock(CANVAS_W / 2, CANVAS_H / 2);
       } else {
         const damage = this.stage.damage;
         HUD.playerHP = Math.max(0, HUD.playerHP - damage);
@@ -1190,6 +1191,8 @@
         HUD.combo = 0;
         this.playerStagger = 0.5;
         this.addDamageNumber(PlayerRenderer.x, PlayerRenderer.y - 120, `-${damage}`, '#ff4444');
+        Particles.spawnHit(PlayerRenderer.x + 30, PlayerRenderer.y - 40);
+        ScreenShake.trigger(8, 0.3);
       }
     },
 
@@ -1201,6 +1204,8 @@
       const points = 150 * Math.max(1, HUD.combo);
       HUD.score += points;
       this.addDamageNumber(EnemyRenderer.x, EnemyRenderer.y - 120, `-${damage}`, '#ff8800');
+      Particles.spawnPlayerAttack(EnemyRenderer.x - 30, EnemyRenderer.y - 40);
+      ScreenShake.trigger(5, 0.2);
       this.addDamageNumber(CANVAS_W / 2, CANVAS_H / 2 - 60, `+${points}`, '#ffcc00');
     },
 
@@ -1242,6 +1247,124 @@
     getPlayerPose() {
       if (this.playerStagger > 0) return 'hit_stagger';
       return GestureDetector.isReady ? GestureDetector.currentGesture : 'idle';
+    }
+  };
+
+  // === PARTICLES ===
+  const Particles = {
+    particles: [],
+
+    update(dt) {
+      this.particles = this.particles.filter(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.life -= dt;
+        p.alpha = Math.max(0, p.life / p.maxLife);
+        if (p.gravity) p.vy += p.gravity * dt;
+        return p.life > 0;
+      });
+    },
+
+    draw() {
+      ctx.save();
+      for (const p of this.particles) {
+        ctx.globalAlpha = p.alpha * (p.baseAlpha || 1);
+        ctx.fillStyle = p.color;
+        if (p.glow) {
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = p.glow;
+        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.5 + 0.5 * p.alpha), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    },
+
+    spawnDust() {
+      if (this.particles.length > 150) return;
+      this.particles.push({
+        x: Math.random() * CANVAS_W,
+        y: CANVAS_H + 5,
+        vx: (Math.random() - 0.5) * 20,
+        vy: -Math.random() * 40 - 10,
+        size: Math.random() * 2 + 1,
+        life: Math.random() * 4 + 2,
+        maxLife: 6,
+        alpha: 1,
+        baseAlpha: 0.3,
+        color: ['rgba(100,180,255,1)', 'rgba(200,150,255,1)', 'rgba(255,200,100,1)'][Math.floor(Math.random() * 3)],
+        glow: 4
+      });
+    },
+
+    spawnImpact(x, y, color, count) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 200 + 100;
+        this.particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 3 + 1,
+          life: Math.random() * 0.4 + 0.2,
+          maxLife: 0.6,
+          alpha: 1,
+          baseAlpha: 1,
+          color,
+          glow: 8,
+          gravity: 300
+        });
+      }
+    },
+
+    spawnBlock(x, y) {
+      this.spawnImpact(x, y, '#88ddff', 15);
+      this.spawnImpact(x, y, '#ffffff', 5);
+    },
+
+    spawnHit(x, y) {
+      this.spawnImpact(x, y, '#ff4444', 15);
+      this.spawnImpact(x, y, '#ff8800', 8);
+    },
+
+    spawnPlayerAttack(x, y) {
+      this.spawnImpact(x, y, '#ffdd44', 12);
+      this.spawnImpact(x, y, '#ffffff', 4);
+    }
+  };
+
+  // === SCREEN SHAKE ===
+  const ScreenShake = {
+    intensity: 0,
+    duration: 0,
+    time: 0,
+    offsetX: 0,
+    offsetY: 0,
+
+    trigger(intensity, duration) {
+      this.intensity = intensity;
+      this.duration = duration;
+      this.time = 0;
+    },
+
+    update(dt) {
+      if (this.time < this.duration) {
+        this.time += dt;
+        const progress = this.time / this.duration;
+        const fade = 1 - progress;
+        this.offsetX = (Math.random() - 0.5) * this.intensity * fade * 2;
+        this.offsetY = (Math.random() - 0.5) * this.intensity * fade * 2;
+      } else {
+        this.offsetX = 0;
+        this.offsetY = 0;
+      }
+    },
+
+    apply() {
+      ctx.translate(this.offsetX, this.offsetY);
     }
   };
 
@@ -1635,7 +1758,11 @@
   function updateCombat(dt) {
     combatTime += dt;
     HUD.update(dt);
+    Particles.update(dt);
+    ScreenShake.update(dt);
     combatResult = CombatEngine.update(dt);
+
+    if (Math.random() < dt * 2) Particles.spawnDust();
 
     if (combatResult === 'player_dead') {
       setState(GameState.GAME_OVER);
@@ -1649,10 +1776,16 @@
   }
 
   function renderCombat() {
+    ctx.save();
+    ScreenShake.apply();
+
+    Particles.draw();
     PlayerRenderer.draw(CombatEngine.getPlayerPose(), combatTime);
     EnemyRenderer.draw(CombatEngine.getEnemyPose(), combatTime);
     HUD.draw(combatTime);
     CombatEngine.drawDamageNumbers();
+
+    ctx.restore();
   }
 
   // === INPUT ===
